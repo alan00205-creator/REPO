@@ -195,6 +195,7 @@ button{font-family:inherit;color:inherit}
 .skinBlurb{font-size:14px;color:var(--muted);margin-top:3px}
 .skinReq{font-size:13px;margin-top:8px;display:inline-block;padding:2px 10px;border-radius:999px;background:var(--ink);color:var(--lamp)}
 .skinReq.on{background:var(--heal);color:var(--ink)}
+.skinReq.own{background:transparent;color:var(--ink);box-shadow:inset 0 0 0 2px var(--ink)}
 .skins.grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px 4px;justify-items:center;margin:0}
 .skins.grid .skin span{font-size:11px;white-space:nowrap}
 .short .skinInfo{flex-direction:column;align-items:flex-start}
@@ -291,12 +292,13 @@ button{font-family:inherit;color:inherit}
   <section class="card" id="cardSkins" role="dialog" aria-modal="true" aria-labelledby="skinsT">
     <div class="cardHead"><h2 id="skinsT">造型</h2><div class="minor" id="skinCount"></div></div>
     <div class="card-scroll"><div class="twoCol">
-      <div class="skinInfo" aria-live="polite">
+      <div class="skinInfo">
         <canvas id="skinBig" aria-hidden="true"></canvas>
         <div class="skinText"><div class="skinName" id="skinName"></div><div class="skinBlurb" id="skinBlurb"></div><div class="skinReq" id="skinReq"></div></div>
       </div>
       <div class="skins grid" id="skins" role="radiogroup" aria-labelledby="skinsT"></div>
     </div></div>
+    <div class="sr" id="skinSr" aria-live="polite"></div>
     <div class="cardFoot"><button class="btn primary" data-close>完成</button></div>
   </section>
 
@@ -1138,6 +1140,7 @@ function onKeyDown(e) {
     else if (App.cardOpen() && (c === 'ArrowLeft' || c === 'ArrowRight') && !inPlay) { /* let focus nav happen below */ }
   }
   if (e.repeat && MOVE_CODES[c] == null) return;
+  if (App.state === 'TITLE' && e.target && e.target.closest && e.target.closest('.skins') && ['ArrowUp', 'ArrowDown', 'Home', 'End'].includes(c)) { e.preventDefault(); if (c === 'Home' || c === 'End') UI.edgeSkin(c === 'End'); else UI.cycleSkin(c === 'ArrowDown' ? 1 : -1); return; }
   if ((c === 'ArrowUp' || c === 'ArrowDown') && App.cardOpen() && !inPlay) { e.preventDefault(); UI.moveFocus(c === 'ArrowDown' ? 1 : -1); }
   if (c === 'Escape' || c === 'KeyP') App.onPauseKey(c);
   else if (c === 'KeyM') { Save.data.settings.muted = !Save.data.settings.muted; Save.write(); Audio.applyVol(); UI.syncSettings(); }
@@ -1212,6 +1215,8 @@ const SKINS = [
       c.fillStyle = C('#EE5D8F'); c.fill(); c.strokeStyle = K; c.lineWidth = 1; c.lineJoin = 'round'; c.stroke();
       c.fillStyle = C('#FFF2D6'); c.beginPath(); for (const [x, y] of [[-8.6, 3.2], [-6, 6.2], [-8.6, 7.6], [-6.2, 2.6]]) { c.moveTo(x + 1, y); c.arc(x, y, 1, 0, TAU); } c.fill();
       c.fillStyle = C('#5FAE4E'); c.beginPath(); for (const [x, y] of [[-7.4, 4.8], [-7, 8.6]]) { c.moveTo(x + .7, y); c.arc(x, y, .7, 0, TAU); } c.fill();
+      // raised back arm in the fall pose goes over the cloth (same arm maths as drawHero)
+      if (o.skin && !o.dead && o.state === 'fall') { c.strokeStyle = C(o.skin.tone || '#F2C9A0'); c.lineWidth = 2; c.lineCap = 'round'; c.beginPath(); c.moveTo(-6, 8); c.lineTo(-6 - Math.sin(2.6) * 6, 8 + Math.cos(2.6) * 6); c.stroke(); }
       // straw cone (front brim edge stays at y <= .45 so the eyes show as much as under the default helmet)
       c.beginPath(); c.moveTo(-14.5, -.1); c.lineTo(0, -9.6); c.lineTo(14.5, -.1); c.quadraticCurveTo(0, 1.0, -14.5, -.1); c.closePath();
       c.fillStyle = C('#E6C072'); c.fill(); c.strokeStyle = K; c.lineWidth = 1.2; c.lineJoin = 'round'; c.stroke();
@@ -1418,7 +1423,7 @@ const SKINS = [
   {
     id: 'lantern', name: '天燈', unlock: 500, blurb: '人往下走，心願往上飛。',
     overalls: '#43357F', helmet: '#2E2766', lamp: '#FFF1B8', scarf: '#FF9F43', lampAt: [0, -12.4], glow: { r: 21, col: '#FFB866', a: .55 }, viewTop: -51.2,
-    trail: { cols: ['#FFB347', '#FFD76A', '#FF8A3D'], kind: 'spark', rate: 12, vy: -38, g: 0, life: .9, s: 1.5 },
+    trail: { cols: ['#FFB347', '#FFD76A', '#FF8A3D'], kind: 'spark', rate: 12, vy: -30, g: 0, life: .9, s: 1.5, y: [30, 46] },
     body(c, C) {
       // warm lantern-light rim so the dark night-blue suit doesn't vanish on the indigo strata (same idea as the fossil suit)
       rr(c, -5.4, -12.4, 10.8, 8.8, 2.6); c.strokeStyle = C('rgba(255,214,150,.4)'); c.lineWidth = .8; c.stroke();
@@ -1580,7 +1585,7 @@ function skinTrail(sk, px, py, S, dt) {
   const tr = sk.trail; if (!tr || !dt) return;
   const moving = !S.onGround || Math.abs(S.vx) > .3;
   trailAcc += dt * (moving ? tr.rate : tr.rate * .25);
-  while (trailAcc >= 1) { trailAcc -= 1; spawnP({ kind: tr.kind || 'spark', x: px + rnd(-5, 5), y: py - rnd(3, 22), vx: rnd(-8, 8) - S.vx * 6, vy: (tr.vy || 0) + rnd(-6, 6), g: tr.g || 0, life: tr.life || .6, s: tr.s || 1.6, col: pick(tr.cols), front: false, drag: .96 }); }
+  while (trailAcc >= 1) { trailAcc -= 1; spawnP({ kind: tr.kind || 'spark', x: px + rnd(-5, 5), y: py - (tr.y ? rnd(tr.y[0], tr.y[1]) : rnd(3, 22)), vx: rnd(-8, 8) - S.vx * 6, vy: (tr.vy || 0) + rnd(-6, 6), g: tr.g || 0, life: tr.life || .6, s: tr.s || 1.6, col: pick(tr.cols), front: false, drag: .96 }); }
 }
 function addFloater(txt, x, y, col, heart) { floaters.push({ txt, x, y, col, heart: !!heart, t: 0 }); if (floaters.length > 8) floaters.shift(); }
 
@@ -1724,6 +1729,7 @@ function drawHero(c, x, y, o) {
   // o: {facing, state, t, skin, flash, alpha, dead, helmetOff, lampOn, scale}
   const sk = o.skin, f = o.facing || 1;
   c.save(); c.globalAlpha = o.alpha == null ? 1 : o.alpha;
+  if (o.clipTop != null && y + (sk.viewTop || -30) < o.clipTop) { c.beginPath(); c.rect(x - 64, o.clipTop, 128, 128); c.clip(); }
   // scarf (world-space points)
   const s = Hero.scarf; c.strokeStyle = o.flash ? '#ffffff' : sk.scarf || '#E5484D'; c.lineWidth = 3; c.lineCap = 'round'; c.beginPath(); c.moveTo(s[0].x, s[0].y - o.camY); for (let i = 1; i < s.length; i++) c.lineTo(s[i].x, s[i].y - o.camY); c.stroke();
   c.translate(x, y);
@@ -1857,7 +1863,7 @@ const App = {
     const from = this.state, iris = from === 'RESULTS' && !reduced();
     const go = () => {
       if (from === 'PAUSED' || from === 'RESULTS') commitRun(from === 'PAUSED' ? 'restart' : 'retry');
-      UI.close(); demo = null; newRun(); Input.clear(); resetMusicFx(); Music.floor = 0; this.set('READY'); this.readyT = 0; HUD.reset(); this.acc = 0;
+      UI.close(); demo = null; clearParts(); newRun(); Input.clear(); resetMusicFx(); Music.floor = 0; this.set('READY'); this.readyT = 0; HUD.reset(); this.acc = 0;
       this.starting = false; this.busy = false; this.music();
       Render.iris = iris ? { mode: 'open', t: 0 } : null;
       showMoveHint(!!(run.hint && !run.hintDone));
@@ -1923,7 +1929,9 @@ function commitRun(reason) {
 }
 
 // ---------- demo on the title ----------
+function clearParts() { for (const q of parts) q.on = false; trailAcc = 0; floaters.length = 0; }
 function startDemo() {
+  clearParts();
   const seed = DEMO_SEEDS[Math.floor(Math.random() * DEMO_SEEDS.length)];
   const track = (typeof DEMO_TRACKS !== 'undefined' && DEMO_TRACKS[seed]) || null;
   demo = { sim: Sim.create(seed, 'return'), bot: track ? null : Bot.make('decent', seed), track, ri: 0, rk: 0, t: 0, fade: 0, fadeIn: 0 };
@@ -2078,7 +2086,8 @@ function showResults() {
   const b1 = $('#resB100');
   if (s.b100Tick != null) { const ms = Math.round(s.b100Tick * STEP); b1.hidden = false; b1.textContent = `百階時間 ${fmtTime(ms, true)}` + (d.best100Ms === ms ? '　最快紀錄！' : ''); } else b1.hidden = true;
   const newly = SKINS.filter(k => s.floor >= k.unlock && !run.unlockedAtStart.includes(k.id));
-  const un = $('#resUnlock'); if (newly.length) { un.hidden = false; un.textContent = `解鎖新造型：${newly.map(k => k.name).join('、')}`; } else un.hidden = true;
+  const un = $('#resUnlock'); un.textContent = '';
+  if (newly.length) { un.hidden = false; un.append('解鎖新造型：'); newly.forEach((k, i) => { const sp = document.createElement('span'); sp.className = 'nw'; sp.textContent = k.name + (i < newly.length - 1 ? '、' : ''); un.append(sp); }); } else un.hidden = true;
   $('#resKeys').hidden = L.coarse;
   $('#resSr').textContent = `${$('#resDeath').textContent}這次到了地下 ${s.floor} 階，稱號${titleFor(s.floor)}。${rec.textContent}`;
   // count-up
@@ -2162,6 +2171,7 @@ const UI = {
     $('#btnSkins').setAttribute('aria-label', `造型：${cur.name}，已收集 ${n}／${SKINS.length}，按下更換`);
     $('#skinNext').textContent = next ? `下一個造型：地下 ${next.unlock} 階` : '造型全收集！';
     $('#skinCount').textContent = `${n}/${SKINS.length}`;
+    $('#skinCount').setAttribute('aria-label', `已收集 ${n}／${SKINS.length}`);
     // dialog grid
     const host = $('#skins'), had = host.contains(document.activeElement) ? document.activeElement.dataset.id : null; host.innerHTML = '';
     for (const sk of SKINS) {
@@ -2175,8 +2185,7 @@ const UI = {
       b.onclick = () => {
         this.showSkin(sk);
         if (!ok) { Audio.play('back'); return; }
-        if (Save.data.skin !== sk.id) { Save.data.skin = sk.id; Save.write(); }
-        Audio.play('select'); this.buildSkins(); const nb = $(`#skins .skin[data-id="${sk.id}"]`); nb && nb.focus({ preventScroll: true });
+        this.equipSkin(sk);
       };
       b.onfocus = () => this.showSkin(sk);
       b.onpointerenter = e => { if (e.pointerType === 'mouse') this.showSkin(sk); };
@@ -2190,7 +2199,7 @@ const UI = {
     this.skinShown = sk; const ok = Save.data.best.floor >= sk.unlock, on = ok && Save.data.skin === sk.id;
     $('#skinName').textContent = sk.name;
     $('#skinBlurb').textContent = ok ? (sk.blurb || '') : '再往下一點就能解鎖。';
-    const r = $('#skinReq'); r.textContent = on ? '使用中' : ok ? (sk.unlock ? `地下 ${sk.unlock} 階解鎖` : '一開始就有') : `抵達地下 ${sk.unlock} 階解鎖`; r.classList.toggle('on', on);
+    const r = $('#skinReq'); r.textContent = on ? '使用中' : ok ? '已解鎖‧按一下換上' : `抵達地下 ${sk.unlock} 階解鎖`; r.classList.toggle('on', on); r.classList.toggle('own', ok && !on);
     this.drawSkinBig(App.t, true);
   },
   drawSkinBig(t, force) {
@@ -2211,11 +2220,20 @@ const UI = {
     x.restore();
     if (!ok) { x.fillStyle = '#F4E9D8'; x.font = '400 14px ' + FONT_NUM; x.textAlign = 'center'; x.fillText('B' + sk.unlock, 48, 56); }
   },
+  // arrows move from the focused tile (or the equipped skin) to the next unlocked one, like a radio group
   cycleSkin(d) {
-    const ok = SKINS.filter(s => Save.data.best.floor >= s.unlock); if (ok.length < 2) return;
-    let i = ok.findIndex(s => s.id === Save.data.skin); i = (i + d + ok.length) % ok.length;
-    Save.data.skin = ok[i].id; Save.write(); Audio.play('select'); this.skinShown = ok[i]; this.buildSkins();
-    const nb = $(`#skins .skin[data-id="${ok[i].id}"]`); nb && nb.focus({ preventScroll: true });
+    const best = Save.data.best.floor, a = document.activeElement;
+    const from = a && a.closest && a.closest('#skins') ? a.dataset.id : Save.data.skin;
+    let i = SKINS.findIndex(k => k.id === from); if (i < 0) i = 0;
+    for (let n = 0; n < SKINS.length; n++) { i = (i + d + SKINS.length) % SKINS.length; if (best >= SKINS[i].unlock) break; }
+    this.equipSkin(SKINS[i]);
+  },
+  edgeSkin(last) { const ok = SKINS.filter(s => Save.data.best.floor >= s.unlock); this.equipSkin(ok[last ? ok.length - 1 : 0]); },
+  equipSkin(sk) {
+    if (!sk) return;
+    if (Save.data.skin !== sk.id) { Save.data.skin = sk.id; Save.write(); $('#skinSr').textContent = `已換上：${sk.name}`; }
+    Audio.play('select'); this.skinShown = sk; this.buildSkins();
+    const nb = $(`#skins .skin[data-id="${sk.id}"]`); nb && nb.focus({ preventScroll: true });
   },
   syncSettings() {
     const S = Save.data.settings;
@@ -2449,7 +2467,7 @@ function drawPlayer(c, S, px, py, camY, tick, onTitle) {
   }
   const drop = st === 'teeter' && S.support ? (S.x < S.support.L ? -1 : 1) * S.facing : 1;
   const gl = sk.glow, glowCol = gl ? gl.col : '#FFF6C8', glowR = gl ? gl.r : 10, glowA = gl ? gl.a : .55 + Math.sin(App.t * 23) * .03;
-  const ho = { facing: S.facing, state: st, t: tick, skin: sk, camY, flash, alpha: tint ? 1 : alphaH, dead: !!D, helmetOff: !!D && D.cause !== 'fall', lampOn, sqx, sqy, flipA, scale, drop, glowR, glowCol, glowA };
+  const ho = { facing: S.facing, state: st, t: tick, skin: sk, camY, flash, alpha: tint ? 1 : alphaH, dead: !!D, helmetOff: !!D && D.cause !== 'fall', lampOn, sqx, sqy, flipA, scale, drop, glowR, glowCol, glowA, clipTop: onTitle ? null : 17 };
   const hx = px + rox, hy = py - camY + roy;
   if (tint && Render.spr.hero) {
     // draw the whole hero once, tint it, then fade it as one sprite (no see-through overlapping parts)
