@@ -108,7 +108,7 @@ button{font-family:inherit;color:inherit}
 .btn.primary{background:var(--lamp);font-size:20px}
 @media (hover:hover){.btn:hover{transform:translateY(-1px)}}
 .btn:active{transform:translateY(2px) scale(.96);box-shadow:0 1px 0 var(--ink)}
-.btn:focus-visible,.iconBtn:focus-visible,.skin:focus-visible,.tog:focus-visible{outline:3px solid var(--lamp);outline-offset:2px;box-shadow:0 0 0 7px var(--ink)}
+.btn:focus-visible,.iconBtn:focus-visible,.skin:focus-visible,.tog:focus-visible,.skinBtn:focus-visible{outline:3px solid var(--lamp);outline-offset:2px;box-shadow:0 0 0 7px var(--ink)}
 .btn.warn{background:#FFD9D0}
 
 /* title */
@@ -175,7 +175,30 @@ button{font-family:inherit;color:inherit}
 .keysHint{text-align:center;font-size:12px;color:var(--muted)}
 
 /* short layouts */
-.short .card,.short #cardTitle{width:min(680px,96vw)}
+/* skins: title-card button + picker dialog */
+.skinBtn{display:flex;align-items:center;gap:10px;width:100%;min-height:56px;margin-top:12px;padding:4px 14px 4px 5px;border:3px solid var(--ink);border-radius:14px;background:var(--paper2);box-shadow:0 3px 0 var(--ink);cursor:pointer;font:400 17px var(--f-zh);color:var(--ink);text-align:left;transition:transform .08s,box-shadow .08s}
+.skinBtn canvas{width:44px;height:44px;border-radius:10px;background:#2B1D14;flex:none}
+.sbT{display:flex;flex-direction:column;line-height:1.25;flex:1;min-width:0}
+.sbL{font-size:12px;color:var(--muted)}
+.sbC{font:400 14px var(--f-num);color:var(--muted);white-space:nowrap}
+.sbC::after{content:'›';font:400 22px var(--f-zh);margin-left:6px;vertical-align:-2px}
+@media (hover:hover){.skinBtn:hover{transform:translateY(-1px)}}
+.skinBtn:active{transform:translateY(2px) scale(.98);box-shadow:0 1px 0 var(--ink)}
+#skinNext{margin-top:4px}
+#cardSkins{width:min(420px,94vw)}
+#cardSkins .cardHead{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+#skinCount{font:400 14px var(--f-num)}
+.skinInfo{display:flex;gap:14px;align-items:center;padding:2px 2px 14px}
+.skinInfo canvas{width:96px;height:96px;border-radius:16px;background:#2B1D14;box-shadow:0 0 0 3px var(--ink);flex:none}
+.skinText{min-width:0}
+.skinName{font-size:22px;line-height:1.2}
+.skinBlurb{font-size:14px;color:var(--muted);margin-top:3px}
+.skinReq{font-size:13px;margin-top:8px;display:inline-block;padding:2px 10px;border-radius:999px;background:var(--ink);color:var(--lamp)}
+.skinReq.on{background:var(--heal);color:var(--ink)}
+.skins.grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px 4px;justify-items:center;margin:0}
+.skins.grid .skin span{font-size:11px;white-space:nowrap}
+.short .skinInfo{flex-direction:column;align-items:flex-start}
+.short .card,.short #cardTitle,.short #cardSkins{width:min(680px,96vw)}
 .short .twoCol{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;align-items:start}
 .tight .logo{font-size:38px}.tight #cardTitle .tagline,.tight .credit{display:none}.tight .depth .num{font-size:52px}.tight .cardHead{padding-top:10px}
 .short .depth .num{font-size:48px}
@@ -214,9 +237,8 @@ button{font-family:inherit;color:inherit}
       <div>
         <div class="cardFoot" style="border-top:0;padding:6px 0 0">
           <button class="btn primary" id="btnStart">開始遊戲</button>
-          <div class="skinsLbl" id="skinsLbl">造型</div>
-          <div class="skins" id="skins" role="radiogroup" aria-labelledby="skinsLbl"></div>
-          <div class="minor" id="skinAll" style="text-align:center"></div>
+          <button class="skinBtn" id="btnSkins"><canvas id="skinCur" aria-hidden="true"></canvas><span class="sbT"><span class="sbL">造型</span><span class="sbN" id="skinCurName">阿燈</span></span><span class="sbC" id="skinCnt"></span></button>
+          <div class="minor" id="skinNext" style="text-align:center"></div>
           <div class="iconRow">
             <button class="btn" id="btnHowto">玩法說明</button>
             <button class="btn sq" id="btnSettings" aria-label="設定"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 8.5a3.5 3.5 0 1 0 0 7a3.5 3.5 0 0 0 0-7Zm8.6 4.9-1.9 1.1.1 2.2-2.1 1.2-1.9-1.1-1.9 1.1h-2.4l-1.9-1.1-1.9 1.1-2.1-1.2.1-2.2-1.9-1.1v-2.8l1.9-1.1-.1-2.2 2.1-1.2 1.9 1.1 1.9-1.1h2.4l1.9 1.1 1.9-1.1 2.1 1.2-.1 2.2 1.9 1.1z"/></svg></button>
@@ -264,6 +286,18 @@ button{font-family:inherit;color:inherit}
     <div class="note" id="iosMute" hidden style="color:var(--muted)">沒聲音的話，請確認手機沒有切到靜音模式。</div>
     </div>
     <div class="cardFoot"><button class="btn primary" data-close>關閉</button></div>
+  </section>
+
+  <section class="card" id="cardSkins" role="dialog" aria-modal="true" aria-labelledby="skinsT">
+    <div class="cardHead"><h2 id="skinsT">造型</h2><div class="minor" id="skinCount"></div></div>
+    <div class="card-scroll"><div class="twoCol">
+      <div class="skinInfo" aria-live="polite">
+        <canvas id="skinBig" aria-hidden="true"></canvas>
+        <div class="skinText"><div class="skinName" id="skinName"></div><div class="skinBlurb" id="skinBlurb"></div><div class="skinReq" id="skinReq"></div></div>
+      </div>
+      <div class="skins grid" id="skins" role="radiogroup" aria-labelledby="skinsT"></div>
+    </div></div>
+    <div class="cardFoot"><button class="btn primary" data-close>完成</button></div>
   </section>
 
   <section class="card" id="cardPause" role="dialog" aria-modal="true" aria-labelledby="pauseT">
@@ -802,7 +836,7 @@ const Save = {
             for (const k of ['muted', 'music', 'sfx']) if (typeof o.settings[k] === 'boolean') d.settings[k] = o.settings[k];
             if (['auto', 'on', 'off'].includes(o.settings.motion)) d.settings.motion = o.settings.motion;
           }
-          if (['adeng', 'tomato', 'glow'].includes(o.skin)) d.skin = o.skin;
+          if (typeof o.skin === 'string' && /^[a-z0-9_]{1,24}$/.test(o.skin)) d.skin = o.skin;
           if (typeof o.seenTutorial === 'boolean') d.seenTutorial = o.seenTutorial;
         }
       } catch (e) { /* corrupt JSON: defaults */ }
@@ -1139,9 +1173,9 @@ const STRATA = [
   { name: '晶洞', bg: '#16122B', wall: '#2C2552', accent: '#7FE3F0', accent2: '#C38BFF', dust: '#8C7FD0', dark: .35 },
 ];
 const SKINS = [
-  { id: 'adeng', name: '阿燈', unlock: 0, overalls: '#3B6EA8', helmet: '#FFC94A', lamp: '#FFF6C8' },
-  { id: 'tomato', name: '番茄', unlock: 50, overalls: '#C8463D', helmet: '#FFE08A', lamp: '#FFF6C8' },
-  { id: 'glow', name: '夜光', unlock: 100, overalls: '#2F9E77', helmet: '#FFC94A', lamp: '#9BFFCE' },
+  { id: 'adeng', name: '阿燈', unlock: 0, blurb: '頭燈一亮，出發往下！', overalls: '#3B6EA8', helmet: '#FFC94A', lamp: '#FFF6C8' },
+  { id: 'tomato', name: '番茄', unlock: 50, blurb: '紅通通的，越踩越熟。', overalls: '#C8463D', helmet: '#FFE08A', lamp: '#FFF6C8' },
+  { id: 'glow', name: '夜光', unlock: 100, blurb: '關了燈也看得見你。', overalls: '#2F9E77', helmet: '#FFC94A', lamp: '#9BFFCE', glow: { r: 14, col: '#9BFFCE', a: .6 } },
 ];
 for (const k of SKINS) { k.overallsDark = scaleCol(k.overalls, .75); k.overallsLight = lighten(k.overalls, .3); }
 const skinById = id => SKINS.find(s => s.id === id) || SKINS[0];
@@ -1256,11 +1290,20 @@ function drawParts(c, camY, front) {
     else if (p.kind === 'chunk') { c.globalAlpha = Math.min(1, a * 2); c.save(); c.translate(p.x, sy); c.rotate(p.rot); c.fillStyle = p.col; c.fillRect(-p.w / 2, -p.h / 2, p.w, p.h); c.strokeStyle = '#6E5A3E'; c.lineWidth = 1; c.strokeRect(-p.w / 2, -p.h / 2, p.w, p.h); c.restore(); }
     else if (p.kind === 'spark') { c.globalAlpha = a; c.fillStyle = p.col; c.beginPath(); c.arc(p.x, sy, p.s * (1 - k * .5), 0, TAU); c.fill(); }
     else if (p.kind === 'confetti') { c.globalAlpha = Math.min(1, a * 1.6); c.save(); c.translate(p.x, sy); c.rotate(p.rot); c.fillStyle = p.col; c.fillRect(-p.s, -p.s / 3, p.s * 2, p.s * .66); c.restore(); }
+    else if (p.kind === 'twinkle') { const r = p.s * Math.sin(Math.PI * k); c.globalAlpha = 1; c.fillStyle = p.col; c.beginPath(); c.moveTo(p.x, sy - r * 2); c.lineTo(p.x + r * .5, sy - r * .5); c.lineTo(p.x + r * 2, sy); c.lineTo(p.x + r * .5, sy + r * .5); c.lineTo(p.x, sy + r * 2); c.lineTo(p.x - r * .5, sy + r * .5); c.lineTo(p.x - r * 2, sy); c.lineTo(p.x - r * .5, sy - r * .5); c.closePath(); c.fill(); }
     else if (p.kind === 'mote') { c.globalAlpha = .5 * Math.sin(Math.PI * k); c.fillStyle = p.col; c.fillRect(p.x, sy, 1.5, 1.5); }
   }
   c.globalAlpha = 1;
 }
 const floaters = [];
+// cosmetic trail for skins that define one: {cols, kind ('spark'|'twinkle'|'sq'), rate (per second while moving), vy, g, life, s}
+let trailAcc = 0;
+function skinTrail(sk, px, py, S, dt) {
+  const tr = sk.trail; if (!tr || !dt) return;
+  const moving = !S.onGround || Math.abs(S.vx) > .3;
+  trailAcc += dt * (moving ? tr.rate : tr.rate * .25);
+  while (trailAcc >= 1) { trailAcc -= 1; spawnP({ kind: tr.kind || 'spark', x: px + rnd(-5, 5), y: py - rnd(3, 22), vx: rnd(-8, 8) - S.vx * 6, vy: (tr.vy || 0) + rnd(-6, 6), g: tr.g || 0, life: tr.life || .6, s: tr.s || 1.6, col: pick(tr.cols), front: false, drag: .96 }); }
+}
 function addFloater(txt, x, y, col, heart) { floaters.push({ txt, x, y, col, heart: !!heart, t: 0 }); if (floaters.length > 8) floaters.shift(); }
 
 // ---------- renderer ----------
@@ -1404,35 +1447,37 @@ function drawHero(c, x, y, o) {
   const sk = o.skin, f = o.facing || 1;
   c.save(); c.globalAlpha = o.alpha == null ? 1 : o.alpha;
   // scarf (world-space points)
-  const s = Hero.scarf; c.strokeStyle = '#E5484D'; c.lineWidth = 3; c.lineCap = 'round'; c.beginPath(); c.moveTo(s[0].x, s[0].y - o.camY); for (let i = 1; i < s.length; i++) c.lineTo(s[i].x, s[i].y - o.camY); c.stroke();
+  const s = Hero.scarf; c.strokeStyle = sk.scarf || '#E5484D'; c.lineWidth = 3; c.lineCap = 'round'; c.beginPath(); c.moveTo(s[0].x, s[0].y - o.camY); for (let i = 1; i < s.length; i++) c.lineTo(s[i].x, s[i].y - o.camY); c.stroke();
   c.translate(x, y);
   if (o.scale && o.scale !== 1) c.scale(o.scale, o.scale);
   if (o.flipA) { c.translate(0, -14); c.rotate(o.flipA * f); c.translate(0, 14); }
   const sx = o.sqx || 1, sy2 = o.sqy || 1; c.scale(sx * f, sy2);
   const white = o.flash;
   const C = (col) => white ? '#ffffff' : col;
-  const st = o.state, t = o.t;
+  const st = o.state, t = o.t, tone = sk.tone || '#F2C9A0', boots = sk.boots || '#3A2618';
+  if (sk.back) sk.back(c, C, o);
   // legs/boots
   let lA = 0, rA = 0;
   if (st === 'run') { lA = Math.sin(t * TAU * 9 / 60) * .6; rA = -lA; }
   c.lineWidth = 1; c.strokeStyle = white ? '#ffffff' : 'rgba(244,233,216,.45)';
   c.fillStyle = C(sk.overallsDark);
-  c.save(); c.translate(-3, -4); c.rotate(lA); c.fillRect(-1.5, -2, 3, 3); rr(c, -3, 1, 5, 3, 1.2); c.fillStyle = C('#3A2618'); c.fill(); c.stroke(); c.restore();
+  c.save(); c.translate(-3, -4); c.rotate(lA); c.fillRect(-1.5, -2, 3, 3); rr(c, -3, 1, 5, 3, 1.2); c.fillStyle = C(boots); c.fill(); c.stroke(); c.restore();
   c.fillStyle = C(sk.overallsDark);
-  c.save(); c.translate(3, -4); c.rotate(rA); c.fillRect(-1.5, -2, 3, 3); rr(c, -2, 1, 5, 3, 1.2); c.fillStyle = C('#3A2618'); c.fill(); c.stroke(); c.restore();
+  c.save(); c.translate(3, -4); c.rotate(rA); c.fillRect(-1.5, -2, 3, 3); rr(c, -2, 1, 5, 3, 1.2); c.fillStyle = C(boots); c.fill(); c.stroke(); c.restore();
   // body lean (teeter leans toward the drop; o.drop is -1/1 in facing space)
   const lean = st === 'run' ? .14 : st === 'teeter' ? (o.drop || 1) * (.1 + .07 * Math.sin(t * TAU * 2 / 60)) : 0;
   c.rotate(lean);
   // overalls
   rr(c, -6, -13, 12, 10, 3); c.fillStyle = C(sk.overalls); c.fill(); c.strokeStyle = 'rgba(20,17,15,.7)'; c.lineWidth = 1; c.stroke();
   c.fillStyle = C(sk.overallsLight); c.fillRect(-4, -13, 1.6, 4); c.fillRect(2.4, -13, 1.6, 4); c.fillRect(-2, -9, 4, 2.5);
+  if (sk.body) sk.body(c, C, o);
   // arms
-  c.strokeStyle = C('#F2C9A0'); c.lineWidth = 2; c.lineCap = 'round';
+  c.strokeStyle = C(tone); c.lineWidth = 2; c.lineCap = 'round';
   let aL = .5, aR = -.5;
   if (st === 'fall') { aL = 2.6; aR = -2.6; } else if (st === 'run') { aL = .5 + Math.sin(t * TAU * 9 / 60) * .7; aR = -.5 - Math.sin(t * TAU * 9 / 60) * .7; } else if (st === 'teeter') { aL = 1.6 + Math.sin(t * TAU * 4 / 60) * 1.2; aR = -1.6 - Math.cos(t * TAU * 4 / 60) * 1.2; }
   c.beginPath(); c.moveTo(-6, -12); c.lineTo(-6 - Math.sin(aL) * 6, -12 + Math.cos(aL) * 6); c.moveTo(6, -12); c.lineTo(6 - Math.sin(aR) * 6, -12 + Math.cos(aR) * 6); c.stroke();
   // head
-  c.beginPath(); c.arc(0, -19, 7, 0, TAU); c.fillStyle = C('#F2C9A0'); c.fill(); c.strokeStyle = 'rgba(20,17,15,.7)'; c.lineWidth = 1; c.stroke();
+  c.beginPath(); c.arc(0, -19, 7, 0, TAU); c.fillStyle = C(tone); c.fill(); c.strokeStyle = 'rgba(20,17,15,.7)'; c.lineWidth = 1; c.stroke();
   // face
   if (!white) {
     c.fillStyle = '#14110F';
@@ -1442,14 +1487,22 @@ function drawHero(c, x, y, o) {
     else { c.fillRect(-3 + 1, -20, 2, 3); c.fillRect(2 + 1, -20, 2, 3); }
     c.fillStyle = 'rgba(242,139,130,.5)'; c.beginPath(); c.arc(-4, -16.5, 1, 0, TAU); c.arc(5, -16.5, 1, 0, TAU); c.fill();
   }
+  if (sk.face) sk.face(c, C, o);
   // helmet + lamp
   if (!o.helmetOff) {
-    c.beginPath(); c.arc(0, -20, 8, Math.PI, TAU); c.closePath(); c.fillStyle = C(sk.helmet); c.fill(); c.strokeStyle = '#14110F'; c.lineWidth = 1.5; c.beginPath(); c.moveTo(-9, -20); c.lineTo(9.5, -20); c.stroke();
-    c.lineWidth = 1; c.strokeStyle = 'rgba(20,17,15,.7)'; c.beginPath(); c.arc(0, -20, 8, Math.PI, TAU); c.stroke();
-    c.beginPath(); c.arc(5, -24, 3, 0, TAU); c.fillStyle = C(o.lampOn === false ? '#5A5550' : sk.lamp); c.fill(); c.strokeStyle = '#14110F'; c.lineWidth = 1; c.stroke();
-    if (o.lampOn !== false && o.glowR && !white) { const g = c.globalCompositeOperation; c.globalCompositeOperation = 'lighter'; glow(c, 5, -24, o.glowR, o.glowCol, o.glowA); c.globalCompositeOperation = g; }
+    c.save(); c.translate(0, -20); drawHat(c, sk, C(o.lampOn === false ? '#5A5550' : sk.lamp), C, o); c.restore();
+    const la = sk.lampAt || LAMP_AT;
+    if (o.lampOn !== false && o.glowR && !white) { const g = c.globalCompositeOperation; c.globalCompositeOperation = 'lighter'; glow(c, la[0], la[1] - 20, o.glowR, o.glowCol, o.glowA); c.globalCompositeOperation = g; }
   }
   c.restore();
+}
+// headgear, drawn with its origin at the brim centre (hero (0,-20)); also used for the helmet that flies off on death
+const LAMP_AT = [5, -4];
+function drawHat(c, sk, lampCol, C, o) {
+  if (sk.hat) { sk.hat(c, C, lampCol, o || {}); return; }
+  c.beginPath(); c.arc(0, 0, 8, Math.PI, TAU); c.closePath(); c.fillStyle = C(sk.helmet); c.fill(); c.strokeStyle = '#14110F'; c.lineWidth = 1.5; c.beginPath(); c.moveTo(-9, 0); c.lineTo(9.5, 0); c.stroke();
+  c.lineWidth = 1; c.strokeStyle = 'rgba(20,17,15,.7)'; c.beginPath(); c.arc(0, 0, 8, Math.PI, TAU); c.stroke();
+  c.beginPath(); c.arc(5, -4, 3, 0, TAU); c.fillStyle = lampCol; c.fill(); c.strokeStyle = '#14110F'; c.lineWidth = 1; c.stroke();
 }
 
 // ---------- canvas text ----------
@@ -1473,7 +1526,7 @@ const COPY = {
   label: { [T_NORMAL]: '穩穩的，放心踩', [T_CRUMBLE]: '踩一下就碎掉！', [T_SPRING]: '咻～會彈起來', [T_CONVEYOR]: '會把你往旁邊送', [T_SPIKE]: '有刺！踩到會痛' },
   names: { [T_NORMAL]: '石板', [T_CRUMBLE]: '碎石板', [T_SPRING]: '彈簧', [T_CONVEYOR]: '輸送帶', [T_SPIKE]: '釘板' },
   ceiling: '別撞到天花板的刺！', bottom: '掉出畫面下方就出局！',
-  speed: '加速了！', near: n => `距離紀錄還剩 ${n} 階`, record: '新紀錄！',
+  speed: '加速了！', unlock: n => `解鎖造型：${n}！`, near: n => `距離紀錄還剩 ${n} 階`, record: '新紀錄！',
   b50: '地下 50 階‧岩盤層', b100: '百階達成！', b100sub: '地下 100 階‧晶洞', bn: n => `地下 ${n} 階！`, best: '最佳',
   death: {
     fall: ['哎呀，踩空了！', '掉到看不見的地方了……', '阿燈決定在這裡睡個午覺。'],
@@ -1483,7 +1536,7 @@ const COPY = {
   },
   titles: [[0, '樓梯新手'], [10, '地下室常客'], [30, '洞穴探險家'], [60, '地底勇者'], [100, '地心傳說']],
 };
-const CANVAS_CHARS = [COPY.ready, COPY.go, '321', ...Object.values(COPY.label), COPY.ceiling, COPY.bottom, COPY.speed, '距離紀錄還剩階', COPY.record, COPY.b50, COPY.b100, COPY.b100sub, '地下階！', COPY.best, '+1−5'].join('');
+const CANVAS_CHARS = [COPY.ready, COPY.go, '321', ...Object.values(COPY.label), COPY.ceiling, COPY.bottom, COPY.speed, '距離紀錄還剩階', COPY.record, COPY.b50, COPY.b100, COPY.b100sub, '地下階！', COPY.best, '+1−5', '解鎖造型：！', ...SKINS.map(k => k.name)].join('');
 const titleFor = f => { let t = COPY.titles[0][1]; for (const [n, s] of COPY.titles) if (f >= n) t = s; return t; };
 const DEMO_SEEDS = [2, 9, 10, 11, 12, 17]; // decent bot survives 40 s with no hits and uses 4 platform types (scratchpad seeds.js)
 
@@ -1540,7 +1593,7 @@ const App = {
     if (st === 'READY' || st === 'PLAYING' || st === 'COUNTDOWN') { this.pause(); return; }
     if (st === 'PAUSED' && UI.openCard === 'cardPause') { this.resume(); return; }
     if (code === 'Escape') {
-      if (UI.openCard === 'cardHowto' || UI.openCard === 'cardSettings') UI.closeDialog();
+      if (UI.isDialog()) UI.closeDialog();
       else if (st === 'RESULTS' && performance.now() >= this.resultsAt + 600) this.goTitle();
     }
   },
@@ -1691,6 +1744,7 @@ function handleEvents(s, cosmetic) {
           const ly = Sim.rowTop(run.startBest);
           for (let i = 0; i < 24; i++) spawnP({ kind: 'spark', x: rnd(16, 344), y: ly, vx: rnd(-40, 40), vy: rnd(-80, -10), g: 60, life: .9, s: rnd(1.5, 2.5), col: '#FFC94A', front: true });
         }
+        for (const k of SKINS) if (k.unlock > 0 && prev < k.unlock && cur >= k.unlock && run && run.startBest < k.unlock) { toast(COPY.unlock(k.name)); if (k.unlock !== 50 && k.unlock !== 100 && !(k.unlock >= 150 && k.unlock % 50 === 0)) Audio.play('milestone'); }
         if (!Save.data.seenTutorial && cur >= 16) { Save.data.seenTutorial = true; Save.write(); }
         break;
       }
@@ -1770,17 +1824,19 @@ function fireworks(i) {
 }
 
 // ---------- UI (cards, dialogs, focus) ----------
+const DIALOGS = ['cardHowto', 'cardSettings', 'cardSkins'];
 const UI = {
   openCard: null, opener: null, resLock: false, restartArm: 0, clearArm: 0,
   open(id, o = {}) {
     for (const c of $$('.card')) { const on = c.id === id || (id !== 'cardTitle' && c.id === 'cardTitle' && false); c.classList.toggle('open', c.id === id); c.inert = c.id !== id; c.setAttribute('aria-hidden', c.id !== id ? 'true' : 'false'); }
     this.openCard = id;
-    $('#scrim').classList.toggle('on', id === 'cardHowto' || id === 'cardSettings' || id === 'cardPause' || id === 'cardResults');
+    $('#scrim').classList.toggle('on', DIALOGS.includes(id) || id === 'cardPause' || id === 'cardResults');
     if (!o.noFocus && !Input.lastTouch) { const f = $('#' + id + ' .btn.primary') || $('#' + id + ' button'); setTimeout(() => { try { f && f.focus({ preventScroll: true }); } catch (e) { } }, 40); }
   },
   // close the cards with no fade (retry from results: the iris is the only transition)
   snapClose() { const els = [...$$('.card'), $('#scrim')]; els.forEach(e => e.classList.add('snap')); this.close(); void document.body.offsetWidth; requestAnimationFrame(() => els.forEach(e => e.classList.remove('snap'))); },
   close() { $('#scrim').classList.remove('lite'); for (const c of $$('.card')) { c.classList.remove('open'); c.inert = true; c.setAttribute('aria-hidden', 'true'); } this.openCard = null; $('#scrim').classList.remove('on'); },
+  isDialog() { return DIALOGS.includes(this.openCard); },
   dialog(id, opener) { this.opener = opener; Audio.play('select'); this.open(id); },
   closeDialog() { const op = this.opener; this.disarm(); Audio.play('back'); this.open('cardTitle', { noFocus: true }); placeTitleCard(); try { op && op.focus({ preventScroll: true }); } catch (e) { } this.opener = null; },
   disarm() {
@@ -1806,35 +1862,82 @@ const UI = {
     else if (L.coarse && L.mode === 'wide' && L.fh < 420) { pill.hidden = false; pill.textContent = '轉成直向，畫面會更大喔'; }
     else pill.hidden = true;
   },
+  // ---- skins: title button + picker dialog ----
+  skinShown: null,
+  skinThumb(cv, sk, ok, px) {
+    const k = Math.min(3, Math.max(2, Math.ceil(window.devicePixelRatio || 1)));
+    cv.width = px * k; cv.height = px * k; const x = cv.getContext('2d'); x.setTransform(k * px / 48, 0, 0, k * px / 48, 0, 0);
+    x.fillStyle = '#2B1D14'; x.fillRect(0, 0, 48, 48);
+    x.save(); x.translate(24, 41); x.scale(1.3, 1.3);
+    if (ok) { const save = Hero.scarf.map(p => ({ ...p })); Hero.scarf.forEach((p, i) => { p.x = -4 - i * 4; p.y = -14 + i * 2; }); drawHero(x, 0, 0, { facing: 1, state: 'idle', t: 0, skin: sk, camY: 0, glowR: sk.glow ? sk.glow.r : 10, glowCol: sk.glow ? sk.glow.col : '#FFF6C8', glowA: sk.glow ? sk.glow.a : .55 }); Hero.scarf.forEach((p, i) => Object.assign(p, save[i])); }
+    else { x.globalAlpha = .9; x.fillStyle = '#14110F'; x.beginPath(); x.arc(0, -19, 8.5, 0, TAU); x.fill(); rr(x, -7, -14, 14, 13, 4); x.fill(); x.fillRect(-6, -2, 12, 2); }
+    x.restore();
+    if (!ok) { x.fillStyle = '#F4E9D8'; x.font = '400 9px ' + FONT_NUM; x.textAlign = 'center'; x.fillText('B' + sk.unlock, 24, 26); }
+  },
   buildSkins() {
-    const host = $('#skins'); host.innerHTML = '';
-    const best = Save.data.best.floor;
-    let unlocked = 0;
+    const best = Save.data.best.floor, owned = sk => best >= sk.unlock;
+    if (!SKINS.some(k => k.id === Save.data.skin && owned(k))) Save.data.skin = 'adeng';
+    const cur = skinById(Save.data.skin), n = SKINS.filter(owned).length, next = SKINS.find(k => !owned(k));
+    // title button
+    this.skinThumb($('#skinCur'), cur, true, 44);
+    $('#skinCurName').textContent = cur.name; $('#skinCnt').textContent = `${n}/${SKINS.length}`;
+    $('#btnSkins').setAttribute('aria-label', `造型：${cur.name}，已收集 ${n}／${SKINS.length}，按下更換`);
+    $('#skinNext').textContent = next ? `下一個造型：地下 ${next.unlock} 階` : '造型全收集！';
+    $('#skinCount').textContent = `${n}/${SKINS.length}`;
+    // dialog grid
+    const host = $('#skins'), had = host.contains(document.activeElement) ? document.activeElement.dataset.id : null; host.innerHTML = '';
     for (const sk of SKINS) {
-      const ok = best >= sk.unlock; if (ok) unlocked++;
-      const b = document.createElement('button'); b.className = 'skin'; b.setAttribute('role', 'radio');
-      b.setAttribute('aria-checked', String(Save.data.skin === sk.id)); b.tabIndex = Save.data.skin === sk.id ? 0 : -1;
-      if (!ok) { b.setAttribute('aria-disabled', 'true'); b.setAttribute('aria-label', `造型：${sk.name}（地下 ${sk.unlock} 階解鎖）`); }
-      else b.setAttribute('aria-label', `造型：${sk.name}`);
-      const c = mkCanvas(96, 96); const x = c.getContext('2d'); x.scale(2, 2);
-      x.fillStyle = '#2B1D14'; x.fillRect(0, 0, 48, 48);
-      x.save(); x.translate(24, 41); x.scale(1.3, 1.3);
-      if (ok) { const save = Hero.scarf.map(p => ({ ...p })); Hero.scarf.forEach((p, i) => { p.x = -4 - i * 4; p.y = -14 + i * 2; }); drawHero(x, 0, 0, { facing: 1, state: 'idle', t: 0, skin: sk, camY: 0 }); Hero.scarf.forEach((p, i) => Object.assign(p, save[i])); }
-      else { x.globalAlpha = .9; x.fillStyle = '#14110F'; x.beginPath(); x.arc(0, -19, 8.5, 0, TAU); x.fill(); rr(x, -7, -14, 14, 13, 4); x.fill(); x.fillRect(-6, -2, 12, 2); }
-      x.restore();
-      if (!ok) { x.fillStyle = '#F4E9D8'; x.font = '400 9px ' + FONT_NUM; x.textAlign = 'center'; x.fillText('B' + sk.unlock, 24, 26); }
-      b.setAttribute('aria-label', ok ? `造型：${sk.name}` : `造型：${sk.name}（地下 ${sk.unlock} 階解鎖）`);
-      b.appendChild(c); const cap = document.createElement('span'); cap.textContent = ok ? sk.name : `地下 ${sk.unlock} 階解鎖`; b.appendChild(cap);
-      b.onclick = () => { if (!ok) { Audio.play('back'); return; } Save.data.skin = sk.id; Save.write(); Audio.play('select'); this.buildSkins(); const nb = $$('#skins .skin')[SKINS.indexOf(sk)]; nb && nb.focus({ preventScroll: true }); };
+      const ok = owned(sk), on = Save.data.skin === sk.id;
+      const b = document.createElement('button'); b.className = 'skin'; b.dataset.id = sk.id; b.setAttribute('role', 'radio');
+      b.setAttribute('aria-checked', String(on)); b.tabIndex = on ? 0 : -1;
+      if (!ok) b.setAttribute('aria-disabled', 'true');
+      b.setAttribute('aria-label', ok ? `${sk.name}：${sk.blurb || ''}` : `${sk.name}：地下 ${sk.unlock} 階解鎖`);
+      const c = document.createElement('canvas'); this.skinThumb(c, sk, ok, 48); b.appendChild(c);
+      const cap = document.createElement('span'); cap.textContent = ok ? sk.name : `B${sk.unlock}`; b.appendChild(cap);
+      b.onclick = () => {
+        this.showSkin(sk);
+        if (!ok) { Audio.play('back'); return; }
+        if (Save.data.skin !== sk.id) { Save.data.skin = sk.id; Save.write(); }
+        Audio.play('select'); this.buildSkins(); const nb = $(`#skins .skin[data-id="${sk.id}"]`); nb && nb.focus({ preventScroll: true });
+      };
+      b.onfocus = () => this.showSkin(sk);
+      b.onpointerenter = e => { if (e.pointerType === 'mouse') this.showSkin(sk); };
       host.appendChild(b);
     }
-    $('#skinAll').textContent = unlocked === SKINS.length ? '造型全收集！' : '';
+    host.onpointerleave = () => this.showSkin(skinById(Save.data.skin));
+    if (had) { const nb = $(`#skins .skin[data-id="${had}"]`); nb && nb.focus({ preventScroll: true }); }
+    this.showSkin(this.skinShown && this.openCard === 'cardSkins' ? this.skinShown : cur);
+  },
+  showSkin(sk) {
+    this.skinShown = sk; const ok = Save.data.best.floor >= sk.unlock, on = ok && Save.data.skin === sk.id;
+    $('#skinName').textContent = sk.name;
+    $('#skinBlurb').textContent = ok ? (sk.blurb || '') : '再往下一點就能解鎖。';
+    const r = $('#skinReq'); r.textContent = on ? '使用中' : ok ? (sk.unlock ? `地下 ${sk.unlock} 階解鎖` : '一開始就有') : `抵達地下 ${sk.unlock} 階解鎖`; r.classList.toggle('on', on);
+    this.drawSkinBig(App.t, true);
+  },
+  drawSkinBig(t, force) {
+    const sk = this.skinShown; if (!sk) return;
+    const cv = $('#skinBig'), ok = Save.data.best.floor >= sk.unlock, rm = reduced();
+    if (!force && (rm || !ok)) return;
+    const k = Math.min(3, Math.max(2, Math.ceil(window.devicePixelRatio || 1)));
+    if (cv.width !== 96 * k) { cv.width = 96 * k; cv.height = 96 * k; }
+    const x = cv.getContext('2d'); x.setTransform(k, 0, 0, k, 0, 0); x.fillStyle = '#2B1D14'; x.fillRect(0, 0, 96, 96);
+    x.fillStyle = 'rgba(244,233,216,.08)'; x.fillRect(14, 84, 68, 4);
+    x.save(); x.translate(48, 84); x.scale(2.5, 2.5);
+    if (ok) {
+      const ph = rm ? 0 : (t % 4), st = ph < 2 ? 'idle' : 'run', tick = Math.floor(t * 60);
+      const save = Hero.scarf.map(p => ({ ...p })); Hero.scarf.forEach((p, i) => { p.x = -4 - i * 4 + (st === 'run' ? Math.sin(t * 9 + i) * .8 : 0); p.y = -14 + i * 2 + (st === 'run' ? -i * .8 : 0); });
+      drawHero(x, 0, 0, { facing: 1, state: st, t: tick, skin: sk, camY: 0, glowR: sk.glow ? sk.glow.r : 10, glowCol: sk.glow ? sk.glow.col : '#FFF6C8', glowA: sk.glow ? sk.glow.a : .55 });
+      Hero.scarf.forEach((p, i) => Object.assign(p, save[i]));
+    } else { x.globalAlpha = .9; x.fillStyle = '#14110F'; x.beginPath(); x.arc(0, -19, 8.5, 0, TAU); x.fill(); rr(x, -7, -14, 14, 13, 4); x.fill(); x.fillRect(-6, -2, 12, 2); }
+    x.restore();
+    if (!ok) { x.fillStyle = '#F4E9D8'; x.font = '400 14px ' + FONT_NUM; x.textAlign = 'center'; x.fillText('B' + sk.unlock, 48, 56); }
   },
   cycleSkin(d) {
     const ok = SKINS.filter(s => Save.data.best.floor >= s.unlock); if (ok.length < 2) return;
     let i = ok.findIndex(s => s.id === Save.data.skin); i = (i + d + ok.length) % ok.length;
-    Save.data.skin = ok[i].id; Save.write(); Audio.play('select'); this.buildSkins();
-    const nb = $$('#skins .skin')[SKINS.indexOf(ok[i])]; nb && nb.focus({ preventScroll: true });
+    Save.data.skin = ok[i].id; Save.write(); Audio.play('select'); this.skinShown = ok[i]; this.buildSkins();
+    const nb = $(`#skins .skin[data-id="${ok[i].id}"]`); nb && nb.focus({ preventScroll: true });
   },
   syncSettings() {
     const S = Save.data.settings;
@@ -1917,6 +2020,7 @@ function frame(now) {
   if (Render.ceilFlash > 0) Render.ceilFlash -= dts;
   Render.pump(6);
   try { renderFrame(alpha, dts * fxScale); } catch (e) { console.error(e); }
+  if (UI.openCard === 'cardSkins') UI.drawSkinBig(App.t);
   if (run && App.inRun()) HUD.update();
   if (DEBUG) drawDebug();
 }
@@ -1987,6 +2091,7 @@ function renderFrame(alpha, dtFx) {
   const sb = strataAt(camY), pal = palette(sb), tick = S.tick + (App.state === 'PLAYING' || onTitle ? a : 0), cY = camY + 16;
   // hero cosmetic update
   heroUpdate(dtFx, px, py, S.vx, S.facing);
+  if (!(run && run.death && !onTitle) && (onTitle || App.state === 'PLAYING')) skinTrail(skinById(Save.data.skin), px, py, S, dtFx);
   // shake: one unshifted fill first, so no stale pixels show at any edge and the hit flash never stacks
   let shx = 0, shy = 0;
   if (Render.shake > 0 && !reduced()) { const m = Math.min(8, Render.shake * (1 - Render.shakeT / .25)); shx = (Math.random() * 2 - 1) * m; shy = (Math.random() * 2 - 1) * m; }
@@ -2041,7 +2146,7 @@ function renderFrame(alpha, dtFx) {
 }
 function drawPlayer(c, S, px, py, camY, tick, onTitle) {
   const D = run && run.death && !onTitle ? run.death : null;
-  const sk = skinById(onTitle ? 'adeng' : Save.data.skin);
+  const sk = skinById(Save.data.skin);
   let st = 'idle';
   if (D) st = D.cause === 'fall' ? 'fall' : 'idle';
   else if (!S.onGround) st = S.vy > 1 ? 'fall' : 'idle';
@@ -2065,7 +2170,7 @@ function drawPlayer(c, S, px, py, camY, tick, onTitle) {
     D.flick = D.t * 10; lampOn = D.t < .6 ? Math.floor(D.t * 10) % 2 === 0 : false;
   }
   const drop = st === 'teeter' && S.support ? (S.x < S.support.L ? -1 : 1) * S.facing : 1;
-  const glowCol = sk.id === 'glow' ? '#9BFFCE' : '#FFF6C8', glowR = sk.id === 'glow' ? 14 : 10, glowA = sk.id === 'glow' ? .6 : .55 + Math.sin(App.t * 23) * .03;
+  const gl = sk.glow, glowCol = gl ? gl.col : '#FFF6C8', glowR = gl ? gl.r : 10, glowA = gl ? gl.a : .55 + Math.sin(App.t * 23) * .03;
   const ho = { facing: S.facing, state: st, t: tick, skin: sk, camY, flash, alpha: tint ? 1 : alphaH, dead: !!D, helmetOff: !!D && D.cause !== 'fall', lampOn, sqx, sqy, flipA, scale, drop, glowR, glowCol, glowA };
   const hx = px + rox, hy = py - camY + roy;
   if (tint && Render.spr.hero) {
@@ -2079,8 +2184,7 @@ function drawPlayer(c, S, px, py, camY, tick, onTitle) {
   } else drawHero(c, hx, hy, ho);
   if (D && D.cause !== 'fall') {
     const h = D.helmet; c.save(); c.translate(h.x, h.y - camY); c.rotate(h.r);
-    c.beginPath(); c.arc(0, 0, 8, Math.PI, TAU); c.closePath(); c.fillStyle = sk.helmet; c.fill(); c.strokeStyle = '#14110F'; c.lineWidth = 1.5; c.stroke();
-    c.beginPath(); c.arc(5, -4, 3, 0, TAU); c.fillStyle = lampOn ? sk.lamp : '#5A5550'; c.fill(); c.stroke(); c.restore();
+    drawHat(c, sk, lampOn ? sk.lamp : '#5A5550', col => col, { state: 'idle', t: tick, dead: true }); c.restore();
   }
 }
 function drawTextOverlays(c, S, camY, onTitle) {
@@ -2190,11 +2294,12 @@ function wire() {
   pb.addEventListener('click', e => { if (e.detail === 0) App.pause(); });
   $('#btnHowto').onclick = e => { UI.buildHowto(); UI.dialog('cardHowto', e.currentTarget); };
   $('#btnSettings').onclick = e => { UI.syncSettings(); UI.dialog('cardSettings', e.currentTarget); };
+  $('#btnSkins').onclick = e => { UI.skinShown = null; UI.buildSkins(); UI.dialog('cardSkins', e.currentTarget); setTimeout(() => { const b = $('#skins .skin[aria-checked="true"]'); try { b && !Input.lastTouch && b.focus({ preventScroll: true }); } catch (_) { } }, 50); };
   $('#btnMute').onclick = () => { Save.data.settings.muted = !Save.data.settings.muted; Save.write(); Audio.applyVol(); UI.syncSettings(); Audio.play('select'); };
   for (const b of $$('[data-close]')) b.onclick = () => UI.closeDialog();
   let scrimDown = false;
   $('#scrim').addEventListener('pointerdown', e => { scrimDown = e.target === $('#scrim'); });
-  $('#scrim').addEventListener('pointerup', e => { if (scrimDown && e.target === $('#scrim') && (UI.openCard === 'cardHowto' || UI.openCard === 'cardSettings')) UI.closeDialog(); scrimDown = false; });
+  $('#scrim').addEventListener('pointerup', e => { if (scrimDown && e.target === $('#scrim') && UI.isDialog()) UI.closeDialog(); scrimDown = false; });
   $('#btnResume').onclick = () => App.resume();
   $('#btnRestart').onclick = () => {
     const b = $('#btnRestart');
