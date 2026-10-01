@@ -72,8 +72,10 @@ button{font-family:inherit;color:inherit}
 #moveHint.show{opacity:1}
 #moveHint .half{position:absolute;top:0;bottom:0;width:50%;border:2px dashed rgba(255,201,74,.55);background:rgba(255,201,74,.08);animation:hintPulse 1s ease-in-out infinite;font-size:18px;color:var(--paper);text-shadow:0 2px 0 var(--ink)}
 #moveHint .half span{position:absolute;left:0;right:0;top:64%;text-align:center}
-#moveHint .half.r{right:0;animation-delay:.5s}
+#moveHint .half.l{border-right:0}
+#moveHint .half.r{right:0;border-left:0;animation-delay:.5s}
 #moveHint .line{position:absolute;left:0;right:0;top:76%;text-align:center;font-size:15px;line-height:1.45;color:var(--paper);text-shadow:0 2px 0 var(--ink),0 0 8px var(--ink);padding:0 10px;text-wrap:balance}
+#moveHint .half ~ .line{left:50%;right:auto;transform:translateX(-50%);width:max-content;max-width:calc(100% - 20px);background:rgba(20,17,15,.78);border-radius:10px;padding:6px 12px}
 #moveHint .keys{position:absolute;left:0;right:0;top:56%;display:flex;justify-content:center;gap:10px}
 #moveHint kbd{display:inline-grid;place-items:center;min-width:44px;height:44px;padding:0 8px;border-radius:10px;border:3px solid var(--ink);background:var(--paper);color:var(--ink);font:400 18px/1 var(--f-num);box-shadow:0 4px 0 var(--ink);animation:keyTap 1.2s ease-in-out infinite}
 #moveHint kbd:nth-of-type(even){animation-delay:.6s}
@@ -84,6 +86,10 @@ button{font-family:inherit;color:inherit}
 /* scrim + fade */
 #scrim{position:absolute;inset:0;background:var(--dim);opacity:0;pointer-events:none;transition:opacity .2s}
 #scrim.on{opacity:1;pointer-events:auto}
+  .nw{white-space:nowrap}
+.rules li{text-wrap:pretty}
+#scrim.lite{background:rgba(20,17,15,.45)}
+.card.snap,#scrim.snap{transition:none!important}
 #fade{position:absolute;inset:0;background:var(--ink);opacity:0;pointer-events:none;transition:opacity .15s ease}
 #fade.on{opacity:1}
 
@@ -228,7 +234,8 @@ button{font-family:inherit;color:inherit}
       <div>
         <ul class="rules">
           <li>天花板會一直往下追，要一路往下踩台階才能活命。</li>
-          <li>踩到新的台階：生命 +1　碰到刺：生命 −5</li>
+          <li>踩到新的台階：<span class="nw">生命 +1</span></li>
+          <li>碰到刺：<span class="nw">生命 −5</span></li>
           <li>生命歸零，或掉出畫面下方，遊戲就結束。</li>
         </ul>
         <div class="ctrlLine" id="howtoCtrl"></div>
@@ -1055,7 +1062,7 @@ function placeTitleCard() {
   const c = $('#cardTitle'), A = L.avail, gutter = L.fx - A.x;
   L.titleDock = 'center'; L.titleTopU = null;
   if (L.mode === 'wide' && gutter >= 392) { c.style.left = (L.fx + L.fw + gutter / 2) + 'px'; c.style.top = (A.y + A.h / 2) + 'px'; L.titleDock = 'gutter'; return; }
-  if (L.mode === 'standard' && !L.short && !L.tight) {
+  if (!L.short && !L.tight) {
     const h = c.offsetHeight || 520, top = Math.max(A.y + 8, A.y + A.h - h - 8);
     c.style.top = (top + h / 2) + 'px'; L.titleDock = 'bottom'; L.titleTopU = (top - L.fy) / L.s;
   }
@@ -1091,7 +1098,8 @@ function onKeyDown(e) {
   if (e.repeat && (c === 'Enter' || c === 'Space' || c === 'NumpadEnter')) { e.preventDefault(); return; }
   if (MOVE_CODES[c] != null) {
     const d = MOVE_CODES[c];
-    if (!e.repeat) { Input.stack = Input.stack.filter(k => k !== c); Input.stack.push(c); }
+    // a key held through start/retry/resume comes back on its next auto-repeat
+    if (!Input.stack.includes(c)) Input.stack.push(c); else if (!e.repeat) { Input.stack = Input.stack.filter(k => k !== c); Input.stack.push(c); }
     if (App.state === 'TITLE' && e.target && e.target.closest && e.target.closest('.skins')) { e.preventDefault(); UI.cycleSkin(d); }
     else if (App.cardOpen() && (c === 'ArrowLeft' || c === 'ArrowRight') && !inPlay) { /* let focus nav happen below */ }
   }
@@ -1116,7 +1124,12 @@ function onPointerDown(e) {
   Input.ptrs.set(e.pointerId, { x: e.clientX, o: ++Input.order }); updateChev();
   if (e.cancelable) e.preventDefault();
 }
-function onPointerMove(e) { const p = Input.ptrs.get(e.pointerId); if (p) { p.x = e.clientX; updateChev(); } }
+function onPointerMove(e) {
+  const p = Input.ptrs.get(e.pointerId);
+  if (p) { p.x = e.clientX; updateChev(); }
+  // a finger held through start/resume (inputs were cleared) is picked up again as soon as it moves
+  else if ((e.buttons & 1) && e.pointerType === 'touch' && App.inRun() && App.state !== 'PAUSED' && App.state !== 'DYING' && !App.cardOpen()) { Input.ptrs.set(e.pointerId, { x: e.clientX, o: ++Input.order }); updateChev(); }
+}
 function onPointerEnd(e) { if (Input.ptrs.delete(e.pointerId)) updateChev(); }
 
 // ---------- strata & palettes ----------
@@ -1264,8 +1277,8 @@ const Render = {
     this.buildSprites();
   },
   pump(ms) {
-    if (App.state === 'PLAYING') return;
-    for (let i = 0; i < 3; i++) { const b = this.builders[i]; if (b && !b.done) { if (b.step(ms)) this.tiles[i] = b.canvas; return; } }
+    const budget = App.state === 'PLAYING' ? 1.5 : ms; // keep building deeper strata during play, in small slices
+    for (let i = 0; i < 3; i++) { const b = this.builders[i]; if (b && !b.done) { if (b.step(budget)) this.tiles[i] = b.canvas; return; } }
   },
   buildSprites() {
     const k = Math.min(L.k, 3), S = this.spr;
@@ -1456,16 +1469,16 @@ const DEMO_TRACKS = {"2":[[0,8],[-1,35],[1,33],[-1,26],[0,2],[1,19],[0,3],[-1,19
 
 // ---------- copy ----------
 const COPY = {
-  ready: '準備⋯⋯', go: '出發！',
+  ready: '準備……', go: '出發！',
   label: { [T_NORMAL]: '穩穩的，放心踩', [T_CRUMBLE]: '踩一下就碎掉！', [T_SPRING]: '咻～會彈起來', [T_CONVEYOR]: '會把你往旁邊送', [T_SPIKE]: '有刺！踩到會痛' },
   names: { [T_NORMAL]: '石板', [T_CRUMBLE]: '碎石板', [T_SPRING]: '彈簧', [T_CONVEYOR]: '輸送帶', [T_SPIKE]: '釘板' },
   ceiling: '別撞到天花板的刺！', bottom: '掉出畫面下方就出局！',
   speed: '加速了！', near: n => `距離紀錄還剩 ${n} 階`, record: '新紀錄！',
   b50: '地下 50 階‧岩盤層', b100: '百階達成！', b100sub: '地下 100 階‧晶洞', bn: n => `地下 ${n} 階！`, best: '最佳',
   death: {
-    fall: ['哎呀，踩空了！', '掉到看不見的地方了⋯⋯', '阿燈決定在這裡睡個午覺。'],
+    fall: ['哎呀，踩空了！', '掉到看不見的地方了……', '阿燈決定在這裡睡個午覺。'],
     spike: ['刺刺的，好痛！', '釘板不是拿來踩的啦。', '下次看清楚再踩！'],
-    ceiling: ['天花板贏了這一回。', '頭上的刺追上來了⋯⋯', '下次要再快一點往下！'],
+    ceiling: ['天花板贏了這一回。', '頭上的刺追上來了……', '下次要再快一點往下！'],
     any: ['媽媽說吃飯了，明天再往下吧。'],
   },
   titles: [[0, '樓梯新手'], [10, '地下室常客'], [30, '洞穴探險家'], [60, '地底勇者'], [100, '地心傳說']],
@@ -1519,7 +1532,7 @@ const App = {
       showMoveHint(!!(run.hint && !run.hintDone));
       Audio.play('ready');
     };
-    if (iris) { go(); } else fade(true, () => { go(); fade(false); });
+    if (iris) { UI.snapClose(); go(); } else fade(true, () => { go(); fade(false); });
   },
   onPauseKey(code) {
     if (this.busy) return;
@@ -1537,7 +1550,7 @@ const App = {
     Input.clear(); Audio.conveyor(false); if (run) run.onBelt = false; showMoveHint(false); this.set('PAUSED'); UI.open('cardPause'); Audio.setLP(500); Music.duck = true; Audio.applyVol(); Audio.play('back');
   },
   resume() {
-    if (this.state !== 'PAUSED') return;
+    if (this.state !== 'PAUSED' || this.busy) return;
     UI.close(); UI.disarm(); Music.duck = false; Audio.applyVol(); Audio.setLP(run && run.sim.life <= 5 && run.sim.life > 0 ? 1400 : 20000);
     if (run && run.hint && !run.hintDone) showMoveHint(true);
     this.set('COUNTDOWN'); this.countdown = 0; this.acc = 0; if (run) { const s = run.sim; s.ipCam = s.camY; s.ipX = s.x; s.ipY = s.y; }
@@ -1647,7 +1660,7 @@ function handleEvents(s, cosmetic) {
       case 'heal': if (!quiet) { addFloater('+1', e.x, e.y - 30, '#6BD08B', true); Audio.play('heal'); } break;
       case 'hit': {
         if (quiet) break;
-        addFloater('−5', s.x, s.y - 34, '#E5484D');
+        if (e.src === 'ceiling') addFloater('−5', s.x + 20, s.camY + 46, '#E5484D'); else addFloater('−5', s.x, s.y - 34, '#E5484D');
         Render.flash = reduced() ? .12 : .35; Render.addShake(e.src === 'ceiling' ? 8 : 6);
         if (e.src === 'ceiling') { if (!reduced()) Render.ceilFlash = .1; Audio.play('ceiling'); } else Audio.play('spike');
         break;
@@ -1745,12 +1758,14 @@ function showResults() {
   setTimeout(() => { UI.resLock = false; if (App.state === 'RESULTS') { try { $('#btnRetry').focus({ preventScroll: true }); } catch (e) { } } }, 600);
   if (newRec) {
     Audio.play('record');
-    if (s.floor >= 10 && !reduced()) [0, 250, 500].forEach((w, i) => setTimeout(() => fireworks(i), w));
+    if (s.floor >= 10 && !reduced()) { $('#scrim').classList.add('lite'); [0, 250, 500].forEach((w, i) => setTimeout(() => fireworks(i), w)); }
   }
   Render.fx = { firework: [] };
 }
 function fireworks(i) {
-  const cols = ['#FFC94A', '#6BD08B', '#7FE3F0'], cx = [110, 250, 180][i], cy = [150, 120, 90][i], camY = run ? run.sim.camY : 0;
+  // burst in the strip of field above the results card
+  const r = $('#cardResults').getBoundingClientRect(), topU = (r.top - L.fy) / L.s;
+  const cols = ['#FFC94A', '#6BD08B', '#7FE3F0'], cx = [100, 260, 180][i], cy = clamp(topU * [.55, .45, .3][i], 30, 150), camY = run ? run.sim.camY : 0;
   for (let j = 0; j < 40; j++) { const a = j / 40 * TAU, sp = rnd(60, 140); spawnP({ kind: 'spark', x: cx, y: camY + cy, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, g: 80, life: 1.1, s: 2, col: cols[i], front: true, drag: .97 }); }
 }
 
@@ -1763,7 +1778,9 @@ const UI = {
     $('#scrim').classList.toggle('on', id === 'cardHowto' || id === 'cardSettings' || id === 'cardPause' || id === 'cardResults');
     if (!o.noFocus && !Input.lastTouch) { const f = $('#' + id + ' .btn.primary') || $('#' + id + ' button'); setTimeout(() => { try { f && f.focus({ preventScroll: true }); } catch (e) { } }, 40); }
   },
-  close() { for (const c of $$('.card')) { c.classList.remove('open'); c.inert = true; c.setAttribute('aria-hidden', 'true'); } this.openCard = null; $('#scrim').classList.remove('on'); },
+  // close the cards with no fade (retry from results: the iris is the only transition)
+  snapClose() { const els = [...$$('.card'), $('#scrim')]; els.forEach(e => e.classList.add('snap')); this.close(); void document.body.offsetWidth; requestAnimationFrame(() => els.forEach(e => e.classList.remove('snap'))); },
+  close() { $('#scrim').classList.remove('lite'); for (const c of $$('.card')) { c.classList.remove('open'); c.inert = true; c.setAttribute('aria-hidden', 'true'); } this.openCard = null; $('#scrim').classList.remove('on'); },
   dialog(id, opener) { this.opener = opener; Audio.play('select'); this.open(id); },
   closeDialog() { const op = this.opener; this.disarm(); Audio.play('back'); this.open('cardTitle', { noFocus: true }); placeTitleCard(); try { op && op.focus({ preventScroll: true }); } catch (e) { } this.opener = null; },
   disarm() {
@@ -1930,7 +1947,7 @@ function gameplayHooks(s) {
     if ((s.holdL >= 8 && s.holdR >= 8) || run.hintT > 6) { run.hintDone = true; s.waitForInput = false; if (run.ceilLabel === -1) run.ceilLabel = 0; showMoveHint(false); }
   }
   // safety net: a first-run player who started moving but is still reading the hint gets the ceiling warning before the first knock
-  if (run.profile === 'onboard' && run.ceilLabel === -1 && s.started && (s.y - 24) - Sim.ceilY(s) < 110) run.ceilLabel = 0;
+  if (run.profile === 'onboard' && run.ceilLabel === -1 && s.started && (s.y - 24) - Sim.ceilY(s) < 110) { run.ceilLabel = 0; if (run.hint && !run.hintDone) { run.hintDone = true; s.waitForInput = false; showMoveHint(false); } }
   if (run.ceilLabel >= 0) { run.ceilLabel += STEP / 1000; if (run.ceilLabel > 3) run.ceilLabel = -2; }
   if (!run.bottomShown && run.profile === 'onboard' && s.onGround && s.y > s.camY + FH - 96 && !labelNearBottom(s)) { run.bottomShown = true; run.bottomLabel = 0; }
   if (run.bottomLabel >= 0) { run.bottomLabel += STEP / 1000; if (run.bottomLabel > 2.5) run.bottomLabel = -2; }
@@ -1995,7 +2012,7 @@ function renderFrame(alpha, dtFx) {
   // 8 front particles & floaters
   drawParts(c, camY, true);
   if (fontsReady && !onTitle) for (const f of floaters) {
-    const k2 = f.t / .6, fy = f.y - camY - 18 * k2, fx = f.heart ? f.x - 5 : f.x;
+    const k2 = f.t / .6, fy = Math.max(44, f.y - camY - 18 * k2), fx = f.heart ? f.x - 5 : f.x;
     cText(c, f.txt, fx, fy, 14, 12, { col: f.col, alpha: 1 - k2, num: true });
     if (f.heart) { c.save(); c.globalAlpha = 1 - k2; heartPath(c, f.x + 10, fy, 4); c.fillStyle = f.col; c.fill(); c.lineWidth = 1.5; c.strokeStyle = '#14110F'; c.stroke(); c.restore(); }
   }
