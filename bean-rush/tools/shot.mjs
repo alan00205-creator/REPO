@@ -22,7 +22,7 @@ const page = await ctx.newPage();
 const errors = [];
 page.on('console', (m) => { if (m.type() === 'error' || m.type() === 'warning') errors.push(m.type() + ': ' + m.text()); });
 page.on('pageerror', (e) => errors.push('pageerror: ' + e.message));
-await page.goto(url + (scenario === 'auto' ? '?auto=1&speed=' + (process.argv.find((a) => a.startsWith('--speed='))?.slice(8) || '4') : ''));
+await page.goto(url + (scenario === 'spectate' ? '?speed=6' : scenario === 'auto' ? '?auto=1&speed=' + (process.argv.find((a) => a.startsWith('--speed='))?.slice(8) || '4') : ''));
 await page.waitForTimeout(2500);
 const tag = (mobile ? (portrait ? 'mp-' : 'ml-') : 'd-') + scenario;
 const shot = async (name) => { await page.screenshot({ path: join(out, `${tag}-${name}.png`) }); };
@@ -174,6 +174,29 @@ if (scenario === 'lobby') {
   await page.click('#btnHelp');
   await page.waitForTimeout(400);
   await shot('help');
+} else if (scenario === 'spectate') {
+  const until = (fn, t = 120000) => page.waitForFunction(fn, null, { timeout: t, polling: 200 });
+  await page.evaluate(() => window.__game.startShow());
+  await until(() => window.__game.sub === 'intro');
+  await page.evaluate(() => window.__game.skipIntro());
+  await until(() => window.__game.sub === 'play');
+  // fill the quota with bots so we're eliminated in round 1
+  await page.evaluate(() => { const s = window.__game.sim; for (const b of s.beans) if (!b.isPlayer && s.qualified.length < s.quota) s.finishBean(b); });
+  await until(() => !document.getElementById('elim').hidden);
+  await page.click('#eWatch');
+  const t0 = Date.now();
+  let last = '';
+  while (Date.now() - t0 < 600000) {
+    const st = await page.evaluate(() => { const g = window.__game; return { state: g.state, sub: g.sub, round: g.show ? g.show.idx : -1, lvl: g.def && g.def.id, spec: !!g.spectate, specBean: g.spectate && g.spectate.bean ? g.spectate.bean.name : null, specBar: !document.getElementById('spec').hidden, hud: !document.getElementById('hud').hidden, results: !document.getElementById('results').hidden, elim: !document.getElementById('elim').hidden }; });
+    const key = JSON.stringify([st.round, st.sub, st.spec, st.results, st.elim]);
+    if (key !== last) { console.log(JSON.stringify(st)); last = key; }
+    if (st.state === 'end') { await shot('end'); break; }
+    if (st.sub === 'intro') await page.evaluate(() => window.__game.skipIntro());
+    if (st.sub === 'play' && st.round === 2) { await shot('watching'); }
+    if (st.results) await page.evaluate(() => window.__game.nextRound());
+    if (st.elim) { console.log('UNEXPECTED elim dialog'); await page.click('#eWatch'); }
+    await page.waitForTimeout(500);
+  }
 } else if (scenario === 'show') {
   await page.click('#btnPlay');
   await page.waitForTimeout(1500);

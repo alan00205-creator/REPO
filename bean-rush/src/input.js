@@ -82,7 +82,8 @@ export class Input {
       this.anyEdge = true;
     }
     if (d) this.keys.add(c); else this.keys.delete(c);
-    if (this.enabled && (c === 'Space' || c.startsWith('Arrow'))) e.preventDefault();
+    const typing = e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT');
+    if (!typing && (c === 'Space' || c.startsWith('Arrow'))) e.preventDefault();
   }
 
   down(e) {
@@ -95,7 +96,7 @@ export class Input {
     this.setMode('touch');
     this.anyEdge = true;
     const w = innerWidth;
-    if (e.clientX < w * 0.45 && !this.stick) {
+    if (e.clientX < w * 0.5 && !this.stick) {
       this.stick = { id: e.pointerId, ox: e.clientX, oy: e.clientY, x: e.clientX, y: e.clientY };
       this.drawStick();
     } else if (!this.look) {

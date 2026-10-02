@@ -105,6 +105,14 @@ export class Game {
     this.sim = sim;
     this.view.setSky(def.sky || 'day');
     this.view.setGooLevel((sim.level.killY ?? -8) + 1.6);
+    if (def.type !== 'lobby' && sim.level.flyover) {
+      // scenery ring around the course, centred on the fly-over path
+      const f = sim.level.flyover;
+      let cx = 0, cz = 0, ext = 0;
+      for (const k of f) { cx += k[0] / f.length; cz += k[2] / f.length; }
+      for (const k of f) ext = Math.max(ext, Math.hypot(k[0] - cx, k[2] - cz));
+      gfx.decorate(cx, cz, ext + 10, makeRng(sim.seed ^ 0x5bd1), (sim.level.killY ?? -8) + 1.6);
+    }
     return sim;
   }
 
@@ -115,6 +123,9 @@ export class Game {
     this.mode = 'lobby';
     this.show = null;
     this.paused = false;
+    this.pendingNext = null;
+    $('elim').hidden = true;
+    $('pause').hidden = true;
     const cs = [{ id: 0, name: this.playerName(), isPlayer: true, look: this.save.look, skill: 1 }];
     const rng = this.rng;
     for (let i = 1; i < 9; i++) cs.push({ id: i, name: rng.pick(BOT_NAMES), look: randomLook(rng), skill: 0.5 });
@@ -158,6 +169,7 @@ export class Game {
     const r3 = r2 === 'fruit' ? 'ring' : rng.pick(['ring', 'fruit']);
     const fin = rng.pick(['hex', 'ringFinal']);
     this.show = { contestants: cs, alive: cs.slice(), rounds: [r1, r2, r3, fin], idx: 0, coins: 0, playerOut: false, outRound: -1, rewarded: false };
+    this.pendingNext = null;
     this.mode = 'show';
     this.state = 'match';
     UI.only('match');
@@ -225,6 +237,11 @@ export class Game {
     this.paused = false;
     const sim = this.makeSim(def, contestants, o);
     if (this.auto && sim.player) sim.player.brain = makeBrain(sim, sim.player, 0.95);
+    // already eliminated earlier in this show: keep watching the bots
+    if (this.show && this.show.playerOut && !sim.player) {
+      this.spectate = { idx: 0 };
+      this.pickSpectate(0);
+    }
     this.def = def;
     this.playerOutShown = false;
     this.finishedShown = false;
@@ -257,11 +274,12 @@ export class Game {
     this.sub = 'count';
     $('intro').hidden = true;
     this.sim.startCountdown();
-    const p = this.sim.player;
+    const p = (this.spectate && this.spectate.bean) || this.sim.player || this.sim.beans[0];
     const rig = this.view.rig;
     rig.mode = 'follow';
     const hint = this.sim.level.camYaw ? this.sim.level.camYaw(p.pos) : null;
     rig.snapTo(V3.set(p.pos.x, p.pos.y + 1.25, p.pos.z), hint ?? p.yaw + Math.PI, this.sim.level.camPitch ?? 0.32);
+    $('spec').hidden = !this.spectate;
     rig.basePitch = this.sim.level.camPitch ?? 0.32;
     rig.baseDist = this.sim.level.camDist ?? 8.6;
     rig.dist = rig.baseDist;
@@ -413,6 +431,8 @@ export class Game {
   }
 
   onPlayerOut() {
+    // last two fell together and we were picked as champion: not an elimination
+    if (this.sim.ended && this.sim.winner === this.sim.player) return;
     if (this.playerOutShown) return;
     this.playerOutShown = true;
     this.sound.play('eliminated');
@@ -499,6 +519,7 @@ export class Game {
     const me = sim.player;
     if (this.mode === 'practice') return;
     if (sim.type === 'final') {
+      if (sim.winner) sim.winner.look = { ...sim.winner.look, hat: 'crown' };
       if (sim.winner === me) {
         UI.big('冠軍！', 'gold anim', '', 3000);
         this.sound.play('crown');
@@ -657,6 +678,7 @@ export class Game {
     if (want && !can) return;
     if (want && (!$('elim').hidden)) return;
     this.paused = want;
+    if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
     if (want) { UI.screen('pause'); this.sound.play('click'); }
     else { $('pause').hidden = true; $('settings').hidden = true; $('help').hidden = true; }
     this.input.reset();
@@ -667,10 +689,14 @@ export class Game {
   update(dt) {
     const inp = this.input.poll();
     // timers
-    for (let i = this.timers.length - 1; i >= 0; i--) {
-      const t = this.timers[i];
+    for (const t of this.timers.slice()) {
       t.at -= dt;
-      if (t.at <= 0) { this.timers.splice(i, 1); t.fn(); }
+      if (t.at <= 0) {
+        const i = this.timers.indexOf(t);
+        if (i < 0) continue; // cleared by an earlier callback
+        this.timers.splice(i, 1);
+        t.fn();
+      }
     }
     if (inp.pause) {
       if (!$('settings').hidden || !$('help').hidden) { $('settings').hidden = true; $('help').hidden = true; }
@@ -797,7 +823,7 @@ export class Game {
       return;
     }
     if (rig.mode === 'fly') {
-      if (rig.update(dt, {}) && this.sub === 'intro') this.skipIntro();
+      if (!this.paused && rig.update(dt, {}) && this.sub === 'intro') this.skipIntro();
       return;
     }
     const focusBean = this.spectate ? this.spectate.bean : sim.player;
@@ -902,7 +928,7 @@ export class Game {
   // ------------------------------------------------------------------------------
   // menus
   bindUI() {
-    const click = (id, fn) => $(id).addEventListener('click', (e) => { e.preventDefault(); this.sound.unlock(); fn(e); });
+    const click = (id, fn) => $(id).addEventListener('click', (e) => { e.preventDefault(); e.currentTarget.blur(); this.sound.unlock(); fn(e); });
     click('btnPlay', () => this.startShow());
     click('btnPractice', () => { this.sound.play('click'); this.openPractice(); });
     click('btnCustom', () => { this.sound.play('click'); this.openCustom(); });

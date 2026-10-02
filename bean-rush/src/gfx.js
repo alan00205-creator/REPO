@@ -246,6 +246,41 @@ export class Gfx {
     for (const s of this.scrolling) s.tex.dispose();
   }
 
+  // Floating candy islands and balloons around a level (purely decorative).
+  decorate(cx, cz, inner, rng, gooY) {
+    const b = this.builder();
+    const GRASS = ['#9be7b0', '#ffd1ec', '#c9b8ff'];
+    const CANDY = ['#ff5fa2', '#ffd23f', '#3fc8ff', '#4fd8a3', '#8b6cff', '#ff9a3c'];
+    const m = new Matrix4();
+    for (let i = 0; i < 16; i++) {
+      const a = (i / 16) * Math.PI * 2 + rng() * 0.3;
+      const d = inner + 40 + rng() * 80;
+      const x = cx + Math.cos(a) * d, z = cz + Math.sin(a) * d;
+      const y = gooY + 4 + rng() * 12 + d * 0.04;
+      const r = 6 + rng() * 9;
+      const g = GRASS[i % GRASS.length];
+      b.cyl(m.makeTranslation(x, y, z), r, r * 0.92, 2.2, 22, { top: { t: 'dots', c: g, c2: '#ffffff', s: 3 }, side: { t: 'hstripe', c: '#ffffff', c2: '#ff86c8', s: 1.1 } });
+      b.cyl(m.makeTranslation(x, y - 1.1 - r * 0.6, z), r * 0.92, 0.4, r * 1.2, 16, { t: 'plain', c: '#b79bd8' });
+      const trees = 1 + Math.floor(rng() * 3);
+      for (let k = 0; k < trees; k++) {
+        const ta = rng() * Math.PI * 2, tr = rng() * r * 0.55;
+        const tx = x + Math.cos(ta) * tr, tz = z + Math.sin(ta) * tr;
+        const h = 3 + rng() * 4;
+        b.cylAt(tx, y + 1.1 + h / 2, tz, 0.3, h, { t: 'plain', c: '#ffffff' });
+        b.sphereAt(tx, y + 1.1 + h + 1.4, tz, 1.8 + rng(), { t: 'candy', c: CANDY[(i + k) % CANDY.length], c2: '#ffffff', s: 1.6, shiny: 1 });
+      }
+    }
+    for (let i = 0; i < 14; i++) {
+      const a = rng() * Math.PI * 2;
+      const d = inner + 10 + rng() * 40;
+      const x = cx + Math.cos(a) * d, z = cz + Math.sin(a) * d, y = gooY + 12 + rng() * 14;
+      b.sphereAt(x, y, z, 2.2, { t: 'candy', c: CANDY[i % CANDY.length], c2: '#ffffff', s: 1.6, shiny: 1 }, 1, 1.2, 1);
+      b.cylAt(x, y - 2.6 - 3, z, 0.06, 6, { t: 'plain', c: '#ffffff' });
+    }
+    const mesh = b.build();
+    if (mesh) { mesh.castShadow = false; mesh.receiveShadow = false; mesh.matrixAutoUpdate = false; this.root.add(mesh); }
+  }
+
   // ---- special visuals ------------------------------------------------------
   fruitTiles(L, size, span) {
     const fruitMats = L.fruits.map((_, i) => {

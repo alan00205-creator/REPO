@@ -119,7 +119,8 @@ export class Sim {
   respawn(b) {
     const L = this.level;
     const cp = L.checkpoints[b.checkpoint] || L.checkpoints[0];
-    const s = cp.spawn(this.rng);
+    // after the whistle, put survivors somewhere that still has floor
+    const s = (this.ended && L.safeSpawn ? L.safeSpawn : cp.spawn)(this.rng);
     b.place3(s.x, s.y, s.z, s.yaw);
     b.respawnT = 0;
     b.knockCd = 0.6;
@@ -130,6 +131,7 @@ export class Sim {
   rules() {
     const L = this.level;
     const playing = this.phase === 'play';
+    this.stepOut = [];
     for (const b of this.beans) {
       if (!b.active || b.out || b.respawnT > 0) continue;
       // checkpoints
@@ -164,6 +166,22 @@ export class Sim {
 
     if (L.rule) L.rule(this);
 
+    // Several beans dropping on the same step must not overshoot a survival target:
+    // save just enough of this step's fallers to land exactly on it.
+    if (this.type === 'survival' && this.stepOut.length && this.aliveCount < this.targetAlive) {
+      const fell = this.rng.shuffle(this.stepOut.slice());
+      const need = Math.min(fell.length, this.targetAlive - this.aliveCount);
+      const saved = fell.slice(0, need);
+      for (const b of saved) {
+        b.out = false;
+        b.active = true;
+        b.respawnT = 0.8;
+        const i = this.eliminated.indexOf(b);
+        if (i >= 0) this.eliminated.splice(i, 1);
+      }
+      this.events = this.events.filter((e) => !(e.type === 'out' && saved.includes(e.bean)));
+    }
+
     if (this.type === 'race') {
       const done = this.qualified.length >= this.quota || this.beans.every((b) => b.finished || b.out);
       if (done) this.endRound('quota');
@@ -193,7 +211,17 @@ export class Sim {
     b.respawnT = 0;
     b.active = false;
     this.eliminated.push(b);
+    if (this.stepOut) this.stepOut.push(b);
     this.emit('out', b, why);
+  }
+
+  // Put a bean somewhere it can stand (used for a champion who fell on the deciding step).
+  placeSafe(b) {
+    const L = this.level;
+    const s = L.safeSpawn ? L.safeSpawn(this.rng) : (L.checkpoints[0] && L.checkpoints[0].spawn(this.rng));
+    if (s) b.place3(s.x, s.y, s.z, s.yaw);
+    b.active = true;
+    b.respawnT = 0;
   }
 
   endRound(reason) {
@@ -220,6 +248,7 @@ export class Sim {
       }
       if (this.winner) {
         this.winner.out = false;
+        if (!this.winner.active || this.winner.pos.y < this.level.killY + 2) this.placeSafe(this.winner);
         for (const b of this.beans) if (b !== this.winner && !b.out) { b.out = true; this.eliminated.push(b); }
         this.qualified = [this.winner];
       }

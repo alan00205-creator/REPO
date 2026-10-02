@@ -105,6 +105,11 @@ function makeRing(final) {
         ],
         arrival,
         intactAt,
+        safeSpawn(rng) {
+          const ok = sectors.filter((s) => s.state === 0);
+          const s = ok.length ? rng.pick(ok) : sectors[0];
+          return { x: Math.cos(s.mid) * 6, y: 0.1, z: Math.sin(s.mid) * 6, yaw: Math.atan2(-Math.cos(s.mid), -Math.sin(s.mid)) };
+        },
         update(t, dt) {
           const pt = sim.phase === 'play' || sim.phase === 'over' ? sim.t : 0;
           const run = sim.phase === 'play'; // bars stop when the whistle blows

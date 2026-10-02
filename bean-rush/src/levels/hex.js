@@ -121,6 +121,14 @@ export default {
         [6, -10, 18, 0, -15, 0],
         [-12, 10, 14, 0, 0, 0],
       ],
+      // an intact tile on the highest floor that still has one
+      safeSpawn(rng) {
+        for (let li = 0; li < LAYERS.length; li++) {
+          const ok = tiles.filter((t) => t.li === li && t.state === 0);
+          if (ok.length) { const t = rng.pick(ok); return { x: t.x, y: LAYERS[li] + 0.05, z: t.z, yaw: 0 }; }
+        }
+        return { x: 0, y: 0.1, z: 0, yaw: 0 };
+      },
       tileAt(li, x, z) {
         const [q, r] = nearest(x, z);
         return index.get(li + ',' + q + ',' + r) || null;

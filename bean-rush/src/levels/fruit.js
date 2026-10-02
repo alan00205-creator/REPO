@@ -92,6 +92,11 @@ export default {
         [-12, 9, 14, 0, 0, 0],
       ],
       done: () => st.stage === 'end',
+      safeSpawn(rng) {
+        const ok = tiles.filter((t) => !t.dropping);
+        const t = ok.length ? rng.pick(ok) : tiles[0];
+        return { x: t.x, y: 0.1, z: t.z, yaw: Math.PI };
+      },
       hud() {
         if (st.stage === 'hide') return { fruit: st.target, left: st.countdown };
         if (st.stage === 'drop' || st.stage === 'hold') return { fruit: st.target, left: 0 };
