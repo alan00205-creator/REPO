@@ -4,7 +4,7 @@
 >
 > | 遊戲 | 位置 | 說明 |
 > |---|---|---|
-> | 台灣人下樓梯 | 根目錄 `index.html` | 本文件 |
+> | 緊落來！台灣人下樓梯 | 根目錄 `index.html` | 本文件 |
 > | 豆豆大闖關（致敬糖豆人的 3D 闖關遊戲） | `bean-rush/index.html` | 見 [`bean-rush/README.md`](bean-rush/README.md) |
 
 致敬 1996 年 Nagi-P Soft 的經典遊戲《NS-SHAFT》（台灣俗稱《小朋友下樓梯》）的瀏覽器小遊戲。
