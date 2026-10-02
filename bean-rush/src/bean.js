@@ -149,16 +149,13 @@ export class Bean {
           v.x = rx + gv.x;
           v.z = rz + gv.z;
         } else if (ml > 0.05) {
+          // air control: steer toward the input at a gentler rate than on the ground
           const ex = dx - v.x, ez = dz - v.z;
           const el = Math.hypot(ex, ez);
-          const step = T.accAir * dt;
-          // In the air only steer toward the input; never brake momentum the input agrees with.
           if (el > 1e-4) {
-            const k = Math.min(1, step / el);
-            const nx = v.x + ex * k, nz = v.z + ez * k;
-            const cur = Math.hypot(v.x, v.z), nxt = Math.hypot(nx, nz);
-            if (nxt >= cur || nxt >= spd * 0.98) { v.x = nx; v.z = nz; }
-            else { v.x = nx; v.z = nz; }
+            const k = Math.min(1, (T.accAir * dt) / el);
+            v.x += ex * k;
+            v.z += ez * k;
           }
         } else {
           v.x *= 1 - 0.6 * dt;

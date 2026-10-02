@@ -113,6 +113,8 @@ export class Game {
       for (const k of f) ext = Math.max(ext, Math.hypot(k[0] - cx, k[2] - cz));
       gfx.decorate(cx, cz, ext + 10, makeRng(sim.seed ^ 0x5bd1), (sim.level.killY ?? -8) + 1.6);
     }
+    // compile shaders now rather than stuttering through the first seconds of play
+    try { this.view.renderer.compile(this.view.scene, this.view.camera); } catch (_) { /* optional */ }
     return sim;
   }
 
@@ -157,11 +159,13 @@ export class Game {
   startShow() {
     this.sound.play('click');
     const rng = this.rng;
-    const easy = this.save.shows < 2 ? 0.82 : 1;
+    // a player's first two shows get gentler bots while the courses are new
+    const easy = this.save.shows < 2 ? 0.85 : 1;
+    const pace = this.save.shows < 2 ? 0.9 : 1;
     const names = rng.shuffle(BOT_NAMES.slice());
     const cs = [{ id: 0, name: this.playerName(), isPlayer: true, look: { ...this.save.look }, skill: 1 }];
     for (let i = 1; i < SHOW_SIZE; i++) {
-      cs.push({ id: i, name: names[i % names.length], look: randomLook(rng), skill: clamp((0.12 + rng() * 0.88) * easy, 0.05, 1) });
+      cs.push({ id: i, name: names[i % names.length], look: randomLook(rng), skill: clamp((0.12 + rng() * 0.88) * easy, 0.05, 1), pace });
     }
     rng.shuffle(cs);
     const r1 = rng.pick(['gate', 'boba']);
@@ -251,6 +255,7 @@ export class Game {
     UI.setText('iRound', s ? (s.idx === 3 ? '決賽' : `第 ${s.idx + 1} 回合`) : '練習');
     this.renderProgress($('iProg'));
     UI.setText('iName', def.name);
+    if (s) this.roulette(def);
     const tag = $('iTag');
     tag.textContent = TYPE_LABEL[def.type];
     tag.className = 'tag ' + def.type;
@@ -269,7 +274,34 @@ export class Game {
     this.refreshTouch();
   }
 
+  // Slot-machine reveal of the round's level name.
+  roulette(def) {
+    const names = Object.values(LEVELS).map((d) => d.name);
+    const el = $('iName');
+    let n = 0;
+    const spin = () => {
+      if (this.sub !== 'intro' || this.def !== def) { el.textContent = def.name; return; }
+      n++;
+      if (n < 12) {
+        el.textContent = names[(n * 7 + names.length) % names.length];
+        el.style.opacity = '0.55';
+        this.sound.play('tick', { vol: 0.6 });
+        this.later(0.05 + n * 0.012, spin);
+      } else {
+        el.textContent = def.name;
+        el.style.opacity = '1';
+        el.classList.remove('pop');
+        void el.offsetWidth;
+        el.classList.add('pop');
+        this.sound.play('chime');
+      }
+    };
+    this.later(0.25, spin);
+  }
+
   skipIntro() {
+    $('iName').style.opacity = '1';
+    if (this.def) $('iName').textContent = this.def.name;
     if (this.state !== 'round' || this.sub !== 'intro') return;
     this.sub = 'count';
     $('intro').hidden = true;

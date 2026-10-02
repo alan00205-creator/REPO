@@ -38,7 +38,7 @@ export class Sim {
 
     const spawns = this.level.spawns(o.contestants.length, this.rng);
     o.contestants.forEach((c, i) => {
-      const b = new Bean(c.id, { name: c.name, isPlayer: c.isPlayer, look: c.look, speedMul: c.isPlayer ? 1 : 0.9 + 0.1 * (c.skill ?? 0.5) });
+      const b = new Bean(c.id, { name: c.name, isPlayer: c.isPlayer, look: c.look, speedMul: c.isPlayer ? 1 : (0.8 + 0.15 * (c.skill ?? 0.5)) * (c.pace ?? 1) });
       b.contestant = c;
       const s = spawns[i];
       b.place3(s.x, s.y, s.z, s.yaw);

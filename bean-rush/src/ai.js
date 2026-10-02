@@ -102,7 +102,8 @@ export class PathBrain {
     this.ignoreT = 0;
     this.hintT = 0;
     this.lastHint = null;
-    this.mood = this.rng.range(0.92, 1); // throttle
+    this.mood = this.rng.range(0.86, 1); // throttle
+    this.dawdleT = this.rng.range(2, 8);
   }
 
   onRespawn() {
@@ -121,6 +122,12 @@ export class PathBrain {
     if (b.finished) { this.celebrate(dt); return; }
     if (this.jumpCd > 0) this.jumpCd -= dt;
     if (this.hesitate > 0) { this.hesitate -= dt; b.mx = b.mz = 0; return; }
+    // now and then a bean looks around or second-guesses itself, like people do
+    this.dawdleT -= dt;
+    if (this.dawdleT <= 0) {
+      this.dawdleT = this.rng.range(4, 10);
+      if (b.grounded && this.rng() < 0.08 + 0.4 * (1 - this.skill)) this.hesitate = this.rng.range(0.3, 1.1);
+    }
 
     const path = this.path;
     const pr = path.project(b.pos.x, b.pos.z, this.seg, P);
@@ -215,7 +222,8 @@ export class PathBrain {
     // Gap logic
     if (b.grounded && b.state === 'normal') {
       const y = b.pos.y;
-      const g1 = groundAt(sim.world, b.pos.x + mx * 0.95, y, b.pos.z + mz * 0.95, 1.3, 2.6);
+      // take off close to the edge: the feet can overhang it a little
+      const g1 = groundAt(sim.world, b.pos.x + mx * 0.55, y, b.pos.z + mz * 0.55, 1.3, 2.6);
       if (g1 === -Infinity || g1 < y - 2.5) {
         const g2 = groundAt(sim.world, b.pos.x + mx * 2.4, y, b.pos.z + mz * 2.4, 1.2, 1.8);
         const g3 = groundAt(sim.world, b.pos.x + mx * 3.6, y, b.pos.z + mz * 3.6, 1.0, 1.8);

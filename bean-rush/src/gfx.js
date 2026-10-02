@@ -174,6 +174,7 @@ export class Gfx {
     this.dynamic = [];
     this.scrolling = [];
     this.updaters = [];
+    this.owned = []; // per-level materials/textures to free with the level
     this.shadows = view.shadows;
     view.scene.add(this.root);
   }
@@ -244,6 +245,7 @@ export class Gfx {
       if (o.geometry) o.geometry.dispose();
     });
     for (const s of this.scrolling) s.tex.dispose();
+    for (const o of this.owned) o.dispose();
   }
 
   // Floating candy islands and balloons around a level (purely decorative).
@@ -290,7 +292,9 @@ export class Gfx {
       g.fillStyle = '#ffe2b8'; roundRect(g, 10, 10, 236, 236, 30); g.fill();
       drawFruit(g, i, 128, 132, 92);
       const t = new CanvasTexture(cv); t.colorSpace = SRGBColorSpace; t.anisotropy = 4;
-      return new MeshLambertMaterial({ map: t });
+      const m = new MeshLambertMaterial({ map: t });
+      this.owned.push(t, m);
+      return m;
     });
     const blank = (() => {
       const cv = canvas(256); const g = cv.getContext('2d');
@@ -299,9 +303,12 @@ export class Gfx {
       g.fillStyle = '#9c8cf0'; g.font = '900 150px Arial, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
       g.fillText('?', 128, 140);
       const t = new CanvasTexture(cv); t.colorSpace = SRGBColorSpace;
-      return new MeshLambertMaterial({ map: t });
+      const m = new MeshLambertMaterial({ map: t });
+      this.owned.push(t, m);
+      return m;
     })();
     const gone = new MeshLambertMaterial({ color: 0x6a5acd });
+    this.owned.push(gone);
     const side = this.material({ t: 'hstripe', c: '#ffffff', c2: '#ff8fcf' });
     const bottom = this.material({ t: 'plain', c: '#8f7fe0' });
     // two draw groups per tile: the fruit face, and everything else
@@ -360,6 +367,7 @@ export class Gfx {
     }
     geo.setAttribute('color', new Float32BufferAttribute(col, 3));
     const mat = new MeshPhongMaterial({ vertexColors: true, shininess: 40, specular: 0x333333 });
+    this.owned.push(mat);
     const im = new InstancedMesh(geo, mat, L.tiles.length);
     // stacked floors would shade each other almost black; only receive
     im.castShadow = false;

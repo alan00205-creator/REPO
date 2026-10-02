@@ -17,7 +17,6 @@ export class Input {
     this.ui = ui;
     this.keys = new Set();
     this.mode = matchMedia('(pointer: coarse)').matches ? 'touch' : 'kbm';
-    this.enabled = false;
     this.sx = 0; this.sy = 0;
     this.jumpEdge = false; this.diveEdge = false; this.jumpHeld = false;
     this.camDX = 0; this.camDY = 0;

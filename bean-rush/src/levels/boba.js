@@ -40,13 +40,20 @@ export default {
     ramp(k, 0, -68.6, 5.2, -100, 10.8, W, 1.2, LK.tea);
     const ang = Math.atan(5.6 / 31.4);
     const down = new Vector3(0, -Math.sin(ang), Math.cos(ang)).multiplyScalar(3.4);
-    for (const cz of [-76, -85.5, -94.5]) {
+    const BELTS = [-76, -85.5, -94.5];
+    for (const cz of BELTS) {
       const y = surf(cz);
       conveyor(k, 0, y + 0.07, cz, W - 0.4, 3.6, down.x, down.z, { rx: ang }).conveyor.copy(down);
     }
-    // top
-    k.box(0, 10.8 - 0.6, -110, 26, 1.2, 20, { look: LK.finish });
-    arch(k, 0, 10.8, -108, 22, { c: '#b07a4f' });
+    // summit: a field of bouncy pearls, then the finish
+    k.box(0, 10.8 - 0.6, -114, 26, 1.2, 28, { look: LK.finish });
+    const bumpers = [];
+    for (const [bx, bz] of [[-6.5, -103.5], [0, -103.5], [6.5, -103.5], [-3.2, -108], [3.2, -108], [-8.5, -108.5], [8.5, -108.5], [0, -112.5]]) {
+      const body = k.body(bx, 10.8 + 1.0, bz, { bounce: 8.5, ground: false, kinematic: false });
+      k.addSphere(body, 0, 0, 0, 1.15, { look: { t: 'band', c: '#ff9fd6', c2: '#ffffff', shiny: 1 }, seg: 20 });
+      bumpers.push({ x: bx, z: bz });
+    }
+    arch(k, 0, 10.8, -118, 22, { c: '#b07a4f' });
 
     // trench floors are open goo; rails along the climb
     const rail = (z0, y0, z1, y1) => {
@@ -59,8 +66,8 @@ export default {
 
     // pearl gantries
     const gantries = [
-      { z: -43.2, y: 5.2, every: 1.25, outs: [-7.5, -2.5, 2.5, 7.5] },
-      { z: -99.2, y: 10.8, every: 1.0, outs: [-8, -4, 0, 4, 8] },
+      { z: -43.2, y: 5.2, every: 1.05, outs: [-7.5, -2.5, 2.5, 7.5] },
+      { z: -99.2, y: 10.8, every: 0.82, outs: [-8, -4, 0, 4, 8] },
     ];
     for (const g of gantries) {
       k.box(-W / 2 - 0.9, g.y + 3.6, g.z - 0.6, 1, 7.2, 1, { look: LK.post });
@@ -73,8 +80,8 @@ export default {
 
     // giant cup behind the finish
     k.deco(null, (b) => {
-      b.cylAt(0, 10.8 + 6, -126, 6, 12, { side: { t: 'cupside', c: '#f0d2a6', c2: '#3a2216', s: 4 }, top: { t: 'plain', c: '#d9a86c' } }, 0, 5.2);
-      b.cylAt(2.4, 10.8 + 15, -125, 0.7, 10, { t: 'plain', c: '#ff5fa2', shiny: 1 }, 0.25);
+      b.cylAt(0, 10.8 + 6, -136, 6, 12, { side: { t: 'cupside', c: '#f0d2a6', c2: '#3a2216', s: 4 }, top: { t: 'plain', c: '#d9a86c' } }, 0, 5.2);
+      b.cylAt(2.4, 10.8 + 15, -135, 0.7, 10, { t: 'plain', c: '#ff5fa2', shiny: 1 }, 0.25);
     });
 
     // --- pearls
@@ -121,6 +128,30 @@ export default {
       },
     };
 
+    // steer around the bouncy pearls on the summit
+    const bumperHint = {
+      aiHint(bean) {
+        if (bean.pos.z > -100) return null;
+        for (const p of bumpers) {
+          const ahead = bean.pos.z - p.z;
+          const lat = bean.pos.x - p.x;
+          if (ahead > 0.3 && ahead < 3.2 && Math.abs(lat) < 1.9) return { dodge: lat >= 0 ? 1 : -1, slow: 0.85 };
+        }
+        return null;
+      },
+    };
+
+    // hop across the backward belts instead of trudging up them
+    const beltHint = {
+      aiHint(bean) {
+        if (!bean.grounded) return null;
+        for (const cz of BELTS) {
+          if (bean.pos.z < cz + 2.5 && bean.pos.z > cz - 1.2) return { jump: true };
+        }
+        return null;
+      },
+    };
+
     const path = new Path([
       { x: 0, z: 2, w: 8 },
       { x: 0, z: -11, w: 7 },
@@ -129,12 +160,12 @@ export default {
       { x: 0, z: -66, w: 7 },
       { x: 0, z: -70, w: 7.5 },
       { x: 0, z: -100, w: 7 },
-      { x: 0, z: -116, w: 6 },
+      { x: 0, z: -126, w: 6 },
     ]);
 
     return {
       path,
-      hazards: [ballHint, stir],
+      hazards: [ballHint, stir, beltHint, bumperHint],
       killY: -7,
       timeLimit: 160,
       checkpoints: [
@@ -143,11 +174,11 @@ export default {
         { test: (p) => p.z < -69.4 && p.y > 4.8, spawn: areaSpawner(-8, 8, -69.6, -71, 5.6) },
       ],
       spawns: (n) => gridSpawns(n, 0, -5, 18, 9, 0.05, rng),
-      finish: (p) => p.z < -108 && p.y > 10,
+      finish: (p) => p.z < -118 && p.y > 10,
       camYaw: () => 0,
       camPitch: 0.36,
       flyover: [
-        [0, 22, -128, 0, 11, -108],
+        [0, 22, -138, 0, 11, -116],
         [13, 16, -96, 0, 8, -86],
         [-12, 13, -58, 0, 5, -55],
         [11, 9, -30, 0, 2, -28],
