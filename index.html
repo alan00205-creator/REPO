@@ -424,8 +424,11 @@ button{font-family:inherit;color:inherit}
   const XMIN = 22, XMAX = 338, FOOT = 12, HEAD = 24, PH = 28;
   const G = 0.40, VT = 8.0, VMAX = 3.4, BELT = 1.5, SPRING_V = -6.4, SPRING_ARM = 120;
   const MAXLIFE = 12, DMG = 5, INVULN = 60, HITSTOP = 4, CRUMBLE_T = 24;
-  const NORMAL = 0, CRUMBLE = 1, SPRING = 2, CONVEYOR = 3, SPIKE = 4;
-  const TYPE_NAMES = ['normal', 'crumble', 'spring', 'conveyor', 'spike'];
+  // ROLLER: a row of spinning logs that carries the rider sideways faster than a belt and gives almost no grip.
+  // PHANTOM: looks like a stone slab but nothing can land on it. Both only appear from row 50 on.
+  const NORMAL = 0, CRUMBLE = 1, SPRING = 2, CONVEYOR = 3, SPIKE = 4, ROLLER = 5, PHANTOM = 6;
+  const ROLL = 2.2, ROLL_GRIP = 0.10;
+  const TYPE_NAMES = ['normal', 'crumble', 'spring', 'conveyor', 'spike', 'roller', 'phantom'];
 
   function mulberry32(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
   const rowTop = k => ROW0 + ROW * k;
@@ -463,8 +466,8 @@ button{font-family:inherit;color:inherit}
   // band rows (spec §5.3 is listed as N/Conv/Spring/Crumble/Spike; reorder to type ids)
   const BAND_W = [
     { upTo: 49, w: { [NORMAL]: 42, [CONVEYOR]: 16, [SPRING]: 10, [CRUMBLE]: 14, [SPIKE]: 18 }, second: 0.30 },
-    { upTo: 99, w: { [NORMAL]: 34, [CONVEYOR]: 16, [SPRING]: 10, [CRUMBLE]: 18, [SPIKE]: 22 }, second: 0.35 },
-    { upTo: Infinity, w: { [NORMAL]: 28, [CONVEYOR]: 16, [SPRING]: 8, [CRUMBLE]: 22, [SPIKE]: 26 }, second: 0.30 },
+    { upTo: 99, w: { [NORMAL]: 25, [CONVEYOR]: 16, [SPRING]: 10, [CRUMBLE]: 18, [SPIKE]: 20, [ROLLER]: 6, [PHANTOM]: 5 }, second: 0.35 },
+    { upTo: Infinity, w: { [NORMAL]: 18, [CONVEYOR]: 14, [SPRING]: 8, [CRUMBLE]: 20, [SPIKE]: 23, [ROLLER]: 9, [PHANTOM]: 8 }, second: 0.30 },
   ];
   const bandFor = k => BAND_W.find(b => k <= b.upTo);
   const ONBOARD_FORCED = { 6: CONVEYOR, 9: SPRING, 12: CRUMBLE, 15: SPIKE };
@@ -511,9 +514,13 @@ button{font-family:inherit;color:inherit}
       I = ivAnd(I, ring(p.cx, 104, 2 * h + 52));
       I = ivAnd(I, [[A.cx - 140, A.cx + 140]]);
     }
+    // after a phantom the player falls straight through it, so this row must be reachable from the row above the phantom
+    if (p.type === PHANTOM) I = ivAnd(I, [[rows[k - 2].primary.cx - 140, rows[k - 2].primary.cx + 140]]);
     const rowHasCrumble = j => { const r = rows[j]; return !!r && r.plats.some(q => q.type === CRUMBLE); };
     const allowed = type => {
-      if (p.type === SPIKE && type !== NORMAL && type !== CONVEYOR) return [];
+      if ((p.type === SPIKE || p.type === PHANTOM) && type !== NORMAL && type !== CONVEYOR) return [];
+      if ((type === SPIKE || type === PHANTOM) && p.type === ROLLER) return [];   // sliding off a roller into a trap is unfair
+      if (type === PHANTOM && (p.type === CRUMBLE || rowHasCrumble(k - 1))) return [];
       if (type === SPIKE) {
         if (p.type === SPIKE) return [];
         if (k < 50 && rows[k - 2] && rows[k - 2].primary.type === SPIKE) return [];
@@ -541,13 +548,15 @@ button{font-family:inherit;color:inherit}
       }
     }
     if (type == null || cx == null) { type = NORMAL; cx = longestMid(I.length ? I : B); fallback = true; s.fallbacks.push(s.seed + ':' + k); if (s.debug && typeof console !== 'undefined') console.warn('gen fallback', s.seed + ':' + k); }
-    const dir = type === CONVEYOR ? (gen() < 0.5 ? -1 : 1) : 0;
+    const dir = type === CONVEYOR || type === ROLLER ? (gen() < 0.5 ? -1 : 1) : 0;
     const prim = makePlat(k, cx, type, dir, plan.forced != null, prof);
     prim.label = !!plan.label;
+    // the first roller / phantom of a run gets a one-time caption, whatever the profile
+    if ((type === ROLLER || type === PHANTOM) && !s.seen[type]) { s.seen[type] = true; prim.label = true; }
     const plats = [prim];
     // second platform
     let chance = plan.second;
-    if (type === SPIKE && chance > 0 && chance < 1) chance = 0.5;
+    if ((type === SPIKE || type === PHANTOM) && chance > 0 && chance < 1) chance = 0.5;
     if (chance > 0) {
       const roll = gen();
       if (roll < chance) {
@@ -586,7 +595,11 @@ button{font-family:inherit;color:inherit}
       if (Math.abs(c.cx - s.rows[k - 2].primary.cx) > 140 + 1e-6) fail('rule3 reachA');
     }
     if (c.type === SPIKE && s.rows[k - 1].plats.some(q => q.type === CRUMBLE)) fail('rule4');
-    if (r.plats.length > 1) { const q = r.plats[1]; const gap = Math.abs(q.cx - c.cx) - q.w / 2 - c.w / 2; if (gap < 36 - 1e-6) fail('rule5 gap ' + gap.toFixed(1)); if (q.type === SPIKE || q.type === SPRING) fail('second type'); }
+    if (p.type === PHANTOM) { if (c.type !== NORMAL && c.type !== CONVEYOR) fail('phantom next type'); if (Math.abs(c.cx - s.rows[k - 2].primary.cx) > 140 + 1e-6) fail('phantom reachA'); }
+    if (c.type === PHANTOM && (p.type === CRUMBLE || s.rows[k - 1].plats.some(q => q.type === CRUMBLE))) fail('phantom after crumble');
+    if (p.type === ROLLER && (c.type === SPIKE || c.type === PHANTOM)) fail('trap after roller');
+    if ((c.type === ROLLER || c.type === PHANTOM) && k < 50) fail('new type too early');
+    if (r.plats.length > 1) { const q = r.plats[1]; const gap = Math.abs(q.cx - c.cx) - q.w / 2 - c.w / 2; if (gap < 36 - 1e-6) fail('rule5 gap ' + gap.toFixed(1)); if (q.type === SPIKE || q.type === SPRING || q.type === ROLLER || q.type === PHANTOM) fail('second type'); }
   }
 
   // ---- state ----
@@ -608,7 +621,7 @@ button{font-family:inherit;color:inherit}
     const s = Object.assign({
       seed, profile: profile === 'onboard' ? 'onboard' : 'return', gen: mulberry32(seed), debug: !!opts.debug,
       tick: 0, playTick: 0, camY: 0, scroll: 0, started: false, startTick: 0, rampT: 0, waitForInput: !!opts.waitForInput,
-      rows: [], plats: [], nextRow: 1,
+      rows: [], plats: [], nextRow: 1, seen: {},
       hitstop: 0, lv: 1, over: false,
       events: [], fallbacks: [], asserts: [],
       ipCam: 0,
@@ -639,6 +652,7 @@ button{font-family:inherit;color:inherit}
   function leaveGround(h) {
     const sp = h.support;
     if (sp && sp.type === CONVEYOR) h.vx += sp.dir * BELT;
+    if (sp && sp.type === ROLLER) h.vx += sp.dir * ROLL;
     h.onGround = false; h.vy = 0; h.support = null;
   }
   function damage(s, h, src) {
@@ -664,7 +678,8 @@ button{font-family:inherit;color:inherit}
   }
   // steps 5-8 for one hero: horizontal, walls, support / fall / swept landing, ceiling
   function moveHero(s, h, dir) {
-    const a = h.onGround ? 0.55 : 0.40, d = h.onGround ? 0.80 : 0.15;
+    const onRoll = h.onGround && h.support && h.support.type === ROLLER;
+    const a = h.onGround ? 0.55 : 0.40, d = h.onGround ? (onRoll ? ROLL_GRIP : 0.80) : 0.15;
     if (dir !== 0) {
       if (h.vx !== 0 && sign(h.vx) === -dir) h.vx += dir * (a + d);
       else if (Math.abs(h.vx) <= VMAX) h.vx = Math.max(-VMAX, Math.min(VMAX, h.vx + dir * a));
@@ -673,6 +688,7 @@ button{font-family:inherit;color:inherit}
     } else h.vx = moveToward(h.vx, 0, d);
     h.prevX = h.x; h.x += h.vx;
     if (h.onGround && h.support && h.support.type === CONVEYOR) h.x += h.support.dir * BELT;
+    if (onRoll) h.x += h.support.dir * ROLL;
     if (h.x < XMIN) { h.x = XMIN; if (h.vx < 0) h.vx = 0; }
     if (h.x > XMAX) { h.x = XMAX; if (h.vx > 0) h.vx = 0; }
     let left = null;
@@ -685,7 +701,9 @@ button{font-family:inherit;color:inherit}
           if (!P.solid || P === h.dropThrough || P === left) continue;
           if (prevB <= P.top + 0.01 && newB >= P.top && P.top <= bottom) {
             const t = (P.top - prevB) / h.vy, xAt = h.prevX + (h.x - h.prevX) * t;
-            if (overlap(P, xAt) && P.top - PH > cY + 2 && (!best || P.top < best.top)) best = P;
+            if (!overlap(P, xAt)) continue;
+            if (P.type === PHANTOM) { if (P.phased !== s.tick) { P.phased = s.tick; emit(s, 'phase', { plat: P, x: xAt, y: P.top, who: h.who }); } continue; }
+            if (P.top - PH > cY + 2 && (!best || P.top < best.top)) best = P;
           }
         }
         if (best) { h.y = best.top; h.vy = 0; onLand(s, h, best); } else h.y = newB;
@@ -801,9 +819,9 @@ button{font-family:inherit;color:inherit}
     const dx = plan.tx - w.x; return Math.abs(dx) < 3 ? 0 : dx > 0 ? 1 : -1;
   }
   function centerOn(w, sp) {
-    const want = sp.cx - (sp.type === CONVEYOR ? sp.dir * 10 : 0);
+    const want = sp.cx - (sp.type === CONVEYOR ? sp.dir * 10 : sp.type === ROLLER ? sp.dir * 16 : 0);
     if (sp.type === CRUMBLE && sp.timer >= 0) return 0;
-    return Math.abs(w.x - want) > 5 ? (want > w.x ? 1 : -1) : (sp.type === CONVEYOR ? -sp.dir : 0);
+    return Math.abs(w.x - want) > 5 ? (want > w.x ? 1 : -1) : (sp.type === CONVEYOR || sp.type === ROLLER ? -sp.dir : 0);
   }
   function evalPlan(s, plan, pending, delay) {
     const w = cloneWorld(s); const p = Object.assign({}, plan); const q = pending.slice();
@@ -823,10 +841,11 @@ button{font-family:inherit;color:inherit}
     sc -= Math.max(0, ycam - 340) * 1.6 + Math.max(0, 170 - ycam) * 1.2;
     const sup = plan.kind === 'wait' ? w.support : landed;
     if (sup) {
-      const below = w.plats.some(Q => Q.solid && Q !== sup && Q.top > sup.top && Q.top <= bottom && Q.type !== SPIKE);
+      const below = w.plats.some(Q => Q.solid && Q !== sup && Q.top > sup.top && Q.top <= bottom && Q.type !== SPIKE && Q.type !== PHANTOM);
       if (!below && ycam > 380) sc -= 120;
       if (sup.type === CRUMBLE) sc -= plan.kind === 'wait' ? 200 : 30;
       if (sup.type === CONVEYOR) sc -= 4;
+      if (sup.type === ROLLER) sc -= 12;
     }
     if (plan.kind === 'wait') sc -= 8; // mild bias to keep moving
     else if (!landed) sc -= 200;
@@ -839,7 +858,7 @@ button{font-family:inherit;color:inherit}
     const bottom = s.camY + FH, sp = s.support;
     const seen = new Set();
     for (const P of s.plats) {
-      if (!P.solid || P === sp || P.top <= s.y + 1 || P.top > bottom || P.type === SPIKE) continue;
+      if (!P.solid || P === sp || P.top <= s.y + 1 || P.top > bottom || P.type === SPIKE || P.type === PHANTOM) continue;
       if ((P.top - s.y) / ROW > 4.5) continue;
       for (const off of [0, -P.w * 0.28, P.w * 0.28]) {
         const tx = Math.max(XMIN, Math.min(XMAX, P.cx + off + (bot.aim ? (bot.rnd() * 2 - 1) * bot.aim : 0)));
@@ -855,7 +874,7 @@ button{font-family:inherit;color:inherit}
   function airPlan(bot, s) {
     const bottom = s.camY + FH, cands = [{ kind: 'go', side: 0, tx: s.x, left: true }];
     for (const P of s.plats) {
-      if (!P.solid || P.top < s.y || P.top > bottom || P.type === SPIKE) continue;
+      if (!P.solid || P.top < s.y || P.top > bottom || P.type === SPIKE || P.type === PHANTOM) continue;
       for (const off of [0, -P.w * 0.28, P.w * 0.28]) cands.push({ kind: 'go', side: 0, tx: Math.max(XMIN, Math.min(XMAX, P.cx + off)), left: true });
     }
     let best = null, bs = -Infinity;
@@ -880,8 +899,8 @@ button{font-family:inherit;color:inherit}
   }
 
   const api = {
-    FW, FH, ROW, ROW0, WALL, XMIN, XMAX, FOOT, HEAD, MAXLIFE, SPRING_ARM, CRUMBLE_T, BELT,
-    NORMAL, CRUMBLE, SPRING, CONVEYOR, SPIKE, TYPE_NAMES,
+    FW, FH, ROW, ROW0, WALL, XMIN, XMAX, FOOT, HEAD, MAXLIFE, SPRING_ARM, CRUMBLE_T, BELT, ROLL,
+    NORMAL, CRUMBLE, SPRING, CONVEYOR, SPIKE, ROLLER, PHANTOM, TYPE_NAMES,
     rowTop, widthFor, create, step, ceilY, profileSpeed, mulberry32,
     makeBot, botDecide, spikeLookahead, ivAnd, ivLen,
   };
@@ -895,7 +914,7 @@ button{font-family:inherit;color:inherit}
 'use strict';
 const Sim = window.__sim, Bot = window.__bot;
 const FW = Sim.FW, FH = Sim.FH, ROW = Sim.ROW, STEP = 1000 / 60;
-const T_NORMAL = Sim.NORMAL, T_CRUMBLE = Sim.CRUMBLE, T_SPRING = Sim.SPRING, T_CONVEYOR = Sim.CONVEYOR, T_SPIKE = Sim.SPIKE;
+const T_NORMAL = Sim.NORMAL, T_CRUMBLE = Sim.CRUMBLE, T_SPRING = Sim.SPRING, T_CONVEYOR = Sim.CONVEYOR, T_SPIKE = Sim.SPIKE, T_ROLLER = Sim.ROLLER, T_PHANTOM = Sim.PHANTOM;
 const QS = (() => { try { return new URLSearchParams(location.search); } catch (e) { return new URLSearchParams(''); } })();
 const DEBUG = QS.get('debug') === '1';
 const isIOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
@@ -1066,6 +1085,7 @@ const Audio = (() => {
     record() { SFX.milestone(); tone({ f: 2093, dur: .6, v: .06, trem: 8, when: .34 }); tone({ f: 2637, dur: .6, v: .05, trem: 8, when: .34 }); },
     death() { tone({ type: 'square', f: 440, f2: 55, dur: .9, v: .18, lp: 4000, lp2: 200 }); nz({ dur: .25, v: .35, f: 300, when: .85 }); },
     fall() { tone({ f: 600, f2: 80, dur: .7, v: .3 }); },
+    phase() { tone({ type: 'triangle', f: 1400, f2: 500, dur: .18, v: .1, p: pr() }); nz({ dur: .1, v: .12, f: 3000, ft: 'highpass' }); },
   };
   function play(name, ...a) {
     if (!ac || App.attract) return;
@@ -3000,6 +3020,37 @@ function drawPlatform(c, P, camY, pal, w, tick, ceilY) {
     c.restore();
     const ang = tick * .3 * P.dir;
     for (let ri = 0; ri < 2; ri++) { const rx = ri ? x0 + wd - 6 : x0 + 6; c.beginPath(); c.arc(rx, sy + 6, 5, 0, TAU); c.fillStyle = '#C9CED6'; c.fill(); c.strokeStyle = '#14110F'; c.lineWidth = 1; c.stroke(); c.beginPath(); for (let i = 0; i < 3; i++) { const a = ang + i * TAU / 3; c.moveTo(rx, sy + 6); c.lineTo(rx + Math.cos(a) * 4, sy + 6 + Math.sin(a) * 4); } c.strokeStyle = '#5A5550'; c.stroke(); }
+  } else if (P.type === T_ROLLER) {
+    // spinning logs on a dark cradle; the bark stripes rotate with the drift direction
+    rr(c, x0, sy + 3, wd, 9, 4); c.fillStyle = '#2E2A26'; c.fill();
+    const n = Math.max(2, Math.round(wd / 13)), step = wd / n, ang = tick * .22 * P.dir;
+    for (let i = 0; i < n; i++) {
+      const lx = x0 + step * (i + .5);
+      c.beginPath(); c.arc(lx, sy + 6, 5.6, 0, TAU); c.fillStyle = '#B8763C'; c.fill(); c.strokeStyle = '#14110F'; c.lineWidth = 1; c.stroke();
+      c.save(); c.beginPath(); c.arc(lx, sy + 6, 4.8, 0, TAU); c.clip();
+      c.strokeStyle = '#7A4A22'; c.lineWidth = 1.3; c.beginPath();
+      for (let j = 0; j < 3; j++) { const a = ang + j * TAU / 3; c.moveTo(lx, sy + 6); c.lineTo(lx + Math.cos(a) * 6, sy + 6 + Math.sin(a) * 6); }
+      c.stroke();
+      c.fillStyle = 'rgba(255,220,170,.35)'; c.beginPath(); c.arc(lx - 1.5, sy + 4.5, 1.6, 0, TAU); c.fill();
+      c.restore();
+    }
+    // direction chevrons on the cradle ends
+    c.fillStyle = '#FFC94A'; c.beginPath();
+    for (const ex of [x0 + 3, x0 + wd - 3]) { const d = P.dir; c.moveTo(ex - d * 1.5, sy + 10); c.lineTo(ex + d * 1.5, sy + 11.5); c.lineTo(ex - d * 1.5, sy + 13); }
+    c.fill();
+  } else if (P.type === T_PHANTOM) {
+    // a stone slab that is slightly see-through with an iridescent rim; flares when someone falls through it
+    const recent = P.phased != null && tick - P.phased < 24, k = P.k || 50;
+    const al = recent ? .4 : Math.min(.88, .7 + (k - 50) / 1400);
+    c.globalAlpha = al;
+    rr(c, x0, sy, wd, 12, 3); c.fillStyle = pal.normal; c.fill();
+    c.fillStyle = pal.normalLip; c.fillRect(x0 + 2, sy, wd - 4, 2);
+    c.fillStyle = pal.normalUnder; c.fillRect(x0 + 2, sy + 10, wd - 4, 2);
+    c.fillStyle = pal.normalSeam; for (let sx = x0 + 22; sx < x0 + wd - 6; sx += 22) c.fillRect(sx, sy + 3, 1, 6);
+    c.globalAlpha = 1;
+    const hue = (tick * 4) % 360, ha = recent ? .95 : .75;
+    c.strokeStyle = `hsla(${hue},90%,72%,${ha})`; c.lineWidth = 1.2; rr(c, x0 + .5, sy + .5, wd - 1, 11, 3); c.stroke();
+    c.strokeStyle = `hsla(${(hue + 120) % 360},90%,78%,${ha * .8})`; c.beginPath(); c.moveTo(x0 + 4, sy + 1.5); c.lineTo(x0 + wd - 4, sy + 1.5); c.stroke();
   } else if (P.type === T_SPIKE) {
     const pulse = .25 + .1 * Math.sin(tick * TAU * 1.5 / 60);
     c.globalAlpha = pulse; c.drawImage(Render.spr.spikeGlow, x0 - 10, sy + 6, wd + 20, 18); c.globalAlpha = 1;
@@ -6371,13 +6422,13 @@ MON_SKINS.push(...(function () {
 prepSkins(MON_SKINS);
 if (MON_SKINS.length !== 20) throw new Error('MON_SKINS ' + MON_SKINS.length);
 // generated by gentracks.js: decent-bot inputs per demo seed, [dir, ticks] runs
-const DEMO_TRACKS = {"9":[[0,8],[1,40],[0,1],[-1,44],[1,23],[-1,22],[1,37],[0,2],[-1,26],[1,12],[-1,24],[1,31],[0,3],[-1,19],[0,2],[1,4],[-1,29],[0,1],[1,62],[-1,53],[1,37],[-1,17],[1,25],[0,2],[-1,27],[0,3],[1,18],[0,3],[-1,18],[0,3],[1,1],[-1,19],[1,33],[0,1],[1,27],[0,2],[-1,18],[0,3],[1,2],[0,1],[1,12],[0,3],[-1,10],[0,8],[1,5],[0,10],[-1,3],[0,10],[1,3],[-1,25],[0,2],[1,12],[0,6],[-1,11],[1,54],[0,1],[-1,12],[0,6],[1,5],[0,3],[1,3],[0,6],[-1,1],[0,2],[-1,2],[1,30],[-1,12],[1,53],[-1,48],[0,1],[1,12],[0,6],[-1,33],[0,1],[1,12],[0,3],[-1,19],[1,29],[0,1],[-1,6],[0,1],[-1,12],[0,2],[1,38],[0,1],[-1,11],[1,38],[0,1],[-1,12],[0,3],[-1,39],[0,1],[1,6],[-1,6],[1,18],[-1,6],[0,1],[-1,12],[0,2],[1,4],[-1,32],[1,7],[0,1],[1,9],[0,1],[-1,11],[1,31],[0,1],[-1,12],[0,6],[1,3],[-1,4],[1,14],[-1,27],[1,4],[0,1],[1,12],[0,3],[-1,11],[1,26],[0,1],[-1,11],[1,43],[-1,1],[0,1],[-1,12],[0,5],[1,6],[-1,46],[0,1],[1,12],[0,2],[-1,39],[0,2],[1,6],[0,1],[1,43],[0,1],[-1,12],[0,6],[1,42],[-1,15],[1,39],[-1,1],[1,22],[0,2],[-1,11],[0,4],[1,24],[-1,9],[0,3],[1,10],[0,4],[-1,4],[0,2],[-1,11],[0,2],[1,2],[-1,33],[0,1],[1,8],[-1,55],[0,2],[1,5],[0,1],[1,39],[-1,2],[0,1],[-1,12],[0,2],[1,24],[0,1],[-1,19],[0,3],[1,36],[-1,7],[0,1],[-1,12],[0,2],[1,22],[0,1],[-1,36],[0,1],[1,12],[0,6],[-1,23],[0,2],[1,19]],"15":[[0,8],[1,35],[-1,79],[1,37],[0,2],[-1,13],[1,61],[-1,26],[0,3],[1,18],[-1,36],[1,25],[-1,12],[1,25],[-1,17],[1,24],[-1,46],[1,39],[0,2],[-1,82],[1,29],[-1,38],[1,25],[-1,23],[0,1],[1,62],[-1,30],[1,53],[-1,6],[1,35],[-1,33],[1,2],[-1,13],[0,1],[1,31],[-1,15],[1,39],[-1,10],[1,47],[-1,1],[0,2],[-1,11],[0,6],[1,5],[-1,44],[1,2],[0,1],[1,12],[0,4],[-1,58],[0,1],[1,2],[0,1],[1,12],[0,1],[1,21],[-1,12],[0,7],[1,6],[-1,6],[0,2],[-1,24],[0,1],[1,6],[-1,18],[1,41],[0,1],[-1,10],[1,44],[0,1],[-1,12],[0,2],[1,12],[-1,42],[0,1],[1,28],[0,1],[-1,34],[0,1],[1,12],[0,1],[1,6],[-1,35],[1,12],[0,6],[-1,20],[0,1],[1,12],[0,6],[-1,7],[0,1],[1,9],[0,6],[-1,7],[0,4],[1,1],[0,2],[1,11],[0,4],[-1,8],[1,7],[0,1],[1,12],[0,2],[-1,2],[1,4],[-1,28],[1,15],[-1,39],[1,16],[-1,62],[1,9],[0,2],[1,7],[0,6],[-1,11],[0,5],[1,32],[0,1],[-1,10],[1,39],[0,1],[-1,2],[1,54],[-1,10],[0,3],[1,10],[0,2],[-1,7],[0,2],[-1,8],[0,5],[1,10],[-1,34],[0,1],[1,12],[0,3],[-1,7],[0,9],[1,4],[0,4],[1,21],[0,3],[-1,6],[1,23],[-1,9],[0,2],[-1,7],[0,6],[1,1],[-1,41],[0,1],[1,3],[0,1],[1,6],[-1,22],[1,6],[0,1],[1,12],[0,2],[-1,4],[1,35]],"17":[[0,8],[-1,39],[0,1],[1,60],[-1,44],[0,2],[1,34],[-1,25],[1,33],[-1,27],[0,3],[1,19],[0,3],[-1,19],[0,3],[1,19],[0,3],[-1,19],[0,3],[1,48],[0,2],[-1,4],[1,32],[0,2],[-1,64],[0,1],[1,5],[-1,20],[0,2],[1,76],[0,1],[-1,29],[0,1],[1,24],[-1,12],[1,26],[0,2],[-1,68],[0,3],[1,48],[-1,15],[1,23],[-1,24],[1,43],[0,2],[-1,19],[1,42],[-1,34],[0,2],[1,28],[0,2],[-1,20],[0,3],[1,5],[-1,23],[1,54],[0,2],[-1,32],[1,17],[-1,25],[0,1],[1,44],[-1,46],[0,2],[1,19],[-1,5],[1,13],[0,1],[-1,43],[1,27],[-1,21],[0,2],[1,29],[0,1],[-1,25],[0,1],[1,25],[0,1],[-1,12],[0,6],[1,7],[0,1],[-1,31],[1,25],[-1,34],[0,2],[1,29],[0,1],[-1,12],[0,1],[-1,10],[0,2],[1,9],[0,2],[1,40],[-1,8],[0,2],[-1,7],[1,23],[-1,4],[0,1],[-1,32],[0,1],[1,3],[-1,38],[1,9],[0,2],[1,4],[0,3],[-1,4],[0,1],[-1,2],[1,81],[0,1],[-1,6],[1,38],[0,1],[-1,12],[0,6],[1,7],[0,3],[1,1],[0,5],[-1,37],[0,1],[1,12],[0,6],[-1,15],[0,3],[1,35],[0,1],[-1,12],[0,6],[1,7],[0,3],[1,1],[0,3],[1,24],[-1,6],[0,1],[-1,10],[0,1],[-1,29],[0,2],[1,12],[0,4],[-1,22],[0,1],[1,28],[0,2],[-1,28],[0,2],[1,4],[0,1],[1,12],[0,2],[-1,11],[0,4],[-1,28]],"20":[[0,8],[-1,35],[1,25],[-1,36],[1,28],[0,2],[-1,19],[0,3],[1,3],[-1,20],[1,39],[0,3],[-1,19],[0,3],[1,19],[0,3],[-1,19],[0,3],[1,19],[-1,38],[1,41],[-1,12],[1,40],[-1,68],[1,17],[-1,44],[1,66],[-1,42],[1,48],[0,2],[-1,61],[0,2],[1,28],[0,2],[-1,7],[0,2],[-1,8],[0,5],[1,51],[0,1],[-1,30],[0,1],[1,11],[-1,60],[0,2],[1,11],[0,3],[1,26],[0,1],[-1,29],[0,2],[1,4],[0,1],[1,12],[0,2],[-1,11],[0,6],[1,9],[-1,32],[1,10],[0,3],[1,3],[0,4],[-1,3],[0,2],[1,40],[0,1],[-1,38],[0,3],[1,25],[0,3],[-1,19],[0,3],[1,19],[0,3],[-1,19],[0,3],[1,5],[-1,23],[0,1],[1,2],[0,1],[1,12],[0,1],[1,24],[0,1],[-1,11],[0,6],[-1,35],[1,7],[0,1],[1,7],[0,3],[-1,2],[0,1],[-1,4],[1,32],[0,1],[-1,29],[1,3],[0,1],[1,12],[0,3],[-1,10],[0,4],[1,33],[0,1],[-1,32],[1,45],[0,2],[-1,9],[0,2],[-1,5],[0,5],[1,1],[0,2],[1,3],[-1,6],[1,37],[0,1],[-1,14],[1,31],[-1,4],[0,8],[1,5],[0,8],[-1,20],[0,3],[1,13],[-1,34],[0,2],[1,1],[0,1],[1,12],[0,4],[-1,9],[0,2],[1,7],[-1,13],[0,2],[1,11],[0,7],[-1,36],[1,25],[-1,6],[0,1],[-1,10],[1,26],[0,3],[-1,19],[0,3],[1,9],[-1,26],[1,2],[0,1],[1,12],[0,4],[-1,9],[0,3],[-1,1],[0,1],[1,34],[0,2],[-1,2],[0,1],[-1,36],[0,2],[1,2],[0,1],[1,40],[0,1],[-1,12],[0,4],[-1,18],[0,3],[1,18],[0,3],[-1,44],[0,1],[1,30],[-1,5],[0,1],[-1,21]],"22":[[0,8],[1,35],[-1,62],[1,17],[-1,5],[0,1],[-1,12],[0,2],[1,35],[0,1],[-1,20],[1,38],[0,1],[-1,2],[0,1],[-1,12],[1,42],[-1,13],[0,2],[1,2],[-1,6],[1,47],[-1,9],[0,3],[1,10],[0,3],[-1,22],[0,3],[1,5],[-1,33],[0,1],[1,12],[0,2],[1,6],[-1,45],[0,1],[1,46],[0,1],[-1,9],[1,1],[0,2],[1,9],[-1,31],[1,3],[0,1],[1,12],[0,3],[-1,6],[1,9],[0,8],[-1,5],[0,10],[1,13],[0,1],[-1,39],[0,1],[1,12],[0,3],[1,13],[0,3],[-1,8],[1,35],[0,1],[-1,1],[0,1],[-1,72],[0,1],[1,20],[0,3],[-1,19],[0,3],[1,19],[0,3],[-1,9],[1,29],[0,1],[-1,12],[0,2],[1,25],[0,2],[-1,6],[0,1],[-1,12],[0,2],[1,11],[0,4],[-1,35],[1,30],[-1,9],[0,2],[-1,10],[0,3],[1,11],[-1,13],[1,33],[0,2],[-1,4],[0,1],[-1,12],[0,2],[1,2],[-1,14],[0,3],[1,7],[-1,25],[1,43],[0,1],[-1,4],[0,1],[-1,12],[0,2],[1,10],[0,5],[-1,16],[0,3],[1,37],[-1,14],[0,2],[1,9],[-1,34],[0,1],[1,12],[0,2],[1,34],[0,1],[-1,6],[0,1],[-1,14],[1,21],[-1,22],[1,7],[0,1],[1,12],[0,2],[-1,11],[1,40],[0,1],[-1,12],[0,4],[-1,6],[1,29],[-1,9],[0,3],[1,10],[0,3],[-1,46],[0,1],[1,6],[-1,62],[1,6],[0,1],[1,13],[0,3],[-1,18],[0,3],[1,38],[0,1],[-1,12],[0,2],[-1,25],[0,1],[1,3],[0,1],[1,12],[0,1],[1,31],[0,1],[-1,36],[1,8],[0,2],[1,7],[-1,24],[1,43],[0,1],[-1,6],[1,36],[0,1],[-1,4],[0,1],[-1,10],[1,20],[0,1],[-1,12],[0,2],[-1,33],[0,1],[1,5],[-1,63],[1,7],[0,1],[1,12],[0,2],[-1,3],[1,37],[0,3],[-1,12],[0,5],[1,7],[-1,31]],"23":[[0,8],[-1,38],[0,2],[1,12],[-1,22],[1,25],[-1,31],[1,59],[-1,38],[0,3],[1,54],[-1,22],[1,25],[-1,53],[0,2],[1,19],[0,3],[-1,18],[0,3],[1,18],[0,3],[-1,18],[0,3],[1,10],[-1,29],[1,41],[-1,6],[0,1],[-1,12],[0,2],[1,2],[-1,2],[1,16],[-1,26],[0,1],[1,30],[0,2],[-1,1],[0,1],[-1,12],[0,4],[1,5],[-1,9],[0,8],[1,5],[0,3],[1,1],[-1,5],[1,13],[0,2],[-1,35],[1,28],[0,1],[-1,6],[0,1],[-1,12],[0,2],[1,7],[0,1],[1,5],[0,4],[-1,16],[0,3],[1,18],[0,3],[-1,10],[1,29],[0,2],[-1,2],[0,1],[-1,12],[0,3],[1,5],[-1,6],[1,29],[0,1],[-1,52],[0,2],[1,11],[0,3],[-1,41],[1,10],[0,3],[1,3],[0,4],[-1,3],[0,2],[-1,18],[1,20],[-1,11],[0,9],[1,4],[0,1],[-1,31],[0,2],[1,8],[0,2],[1,3],[-1,15],[1,8],[0,4],[-1,5],[1,48],[-1,13],[1,18],[0,2],[-1,6],[0,1],[-1,12],[0,1],[1,36],[0,2],[-1,7],[0,1],[-1,39],[0,2],[1,4],[0,1],[1,12],[0,2],[-1,7],[0,2],[-1,8],[0,5],[1,35],[0,1],[-1,43],[0,1],[1,23],[0,1],[-1,12],[0,4],[1,6],[0,2],[1,11],[0,2],[-1,30],[1,9],[0,2],[1,45],[0,1],[-1,11],[1,12],[-1,20],[0,2],[1,12],[0,6],[-1,5],[1,19],[0,1],[-1,12],[0,2],[1,6],[-1,33],[0,1],[1,16],[0,3],[-1,16],[1,35],[-1,7],[0,1],[-1,12],[0,2],[1,11],[-1,24],[0,3],[1,18],[0,3],[-1,18],[0,3],[1,15],[-1,33],[0,1],[1,12],[0,6],[-1,30],[1,1],[0,1],[1,12],[0,2],[-1,11],[0,7],[1,6],[0,2],[1,33],[0,1],[-1,5],[0,4],[-1,2],[1,27],[-1,7],[0,1],[-1,12],[0,2],[1,3],[-1,38],[0,3],[1,40],[0,1],[-1,12],[0,6],[1,16],[-1,10],[1,17],[-1,18],[0,1],[1,6],[-1,40]]};
+const DEMO_TRACKS = {"5":[[0,8],[1,35],[-1,50],[1,26],[0,3],[-1,19],[0,3],[1,19],[0,3],[-1,19],[0,3],[1,8],[-1,27],[1,41],[0,1],[-1,29],[0,2],[1,10],[-1,35],[1,48],[0,2],[-1,23],[1,36],[-1,25],[1,1],[0,1],[1,12],[0,4],[1,15],[0,3],[-1,6],[1,24],[-1,9],[0,2],[-1,6],[1,23],[-1,5],[0,7],[1,5],[-1,40],[1,1],[0,1],[1,12],[0,3],[-1,17],[1,10],[0,3],[1,3],[0,1],[-1,34],[1,6],[0,1],[1,23],[0,3],[-1,2],[1,21],[0,2],[-1,12],[0,6],[1,10],[-1,24],[0,1],[1,2],[0,1],[1,12],[0,1],[1,14],[0,3],[-1,45],[0,2],[1,2],[0,1],[1,70],[0,2],[-1,11],[0,7],[1,43],[0,2],[-1,11],[0,3],[-1,50],[0,2],[1,2],[0,1],[1,12],[0,3],[-1,10],[0,8],[1,18],[0,1],[-1,12],[1,52],[0,1],[-1,12],[0,6],[1,7],[0,3],[1,1],[0,4],[1,6],[-1,27],[0,1],[1,12],[0,6],[-1,1],[1,12],[-1,40],[0,1],[1,4],[0,1],[1,12],[0,2],[-1,11],[1,1],[0,3],[1,61],[0,1],[-1,25],[0,1],[1,12],[-1,13],[1,26],[-1,13],[0,5],[1,20],[0,2],[-1,12],[0,3],[1,7],[-1,24],[1,38],[-1,29],[0,1],[1,12],[0,6],[-1,50],[0,1],[1,39],[0,1],[-1,12],[0,2],[-1,49],[1,11],[0,6],[-1,19],[0,3],[1,36],[-1,7],[0,1],[-1,12],[0,2],[1,3],[-1,18],[1,8],[0,2],[1,11],[0,2],[-1,10],[1,37],[-1,1],[0,1],[-1,12],[0,5],[1,6],[-1,9],[1,26],[0,1],[-1,6],[1,23],[0,3],[-1,18],[0,3],[1,18],[0,1],[-1,42],[0,1],[1,12],[0,6],[-1,40],[1,29],[0,2],[-1,2],[0,1],[-1,12],[0,3],[1,10],[0,8],[-1,5],[0,3],[-1,3],[0,5],[1,50],[0,2],[-1,11],[0,3],[-1,13]],"10":[[0,8],[1,35],[0,2],[-1,15],[1,26],[-1,25],[0,2],[1,20],[0,2],[-1,70],[1,12],[-1,23],[1,19],[0,3],[-1,18],[0,1],[1,37],[-1,25],[1,42],[0,2],[-1,17],[0,3],[1,12],[-1,31],[1,61],[0,2],[-1,37],[0,1],[1,16],[-1,26],[1,33],[0,2],[-1,65],[1,48],[-1,30],[0,3],[1,18],[0,3],[-1,18],[0,3],[1,18],[0,3],[-1,36],[1,31],[-1,33],[1,47],[-1,76],[0,1],[1,2],[-1,17],[1,69],[0,1],[-1,4],[1,22],[-1,52],[0,2],[1,18],[0,3],[-1,19],[0,3],[1,45],[0,2],[-1,28],[0,2],[1,19],[0,3],[-1,19],[0,3],[1,19],[0,3],[-1,19],[0,3],[1,19],[0,3],[-1,52],[0,2],[-1,32],[1,44],[-1,43],[0,2],[1,28],[0,2],[-1,3],[1,43],[0,1],[-1,1],[1,31],[-1,79],[0,1],[1,8],[-1,44],[0,3],[1,42],[0,1],[-1,39],[0,2],[1,67],[-1,4],[1,11],[0,2],[-1,90],[0,2],[1,4],[-1,18],[1,36],[0,2],[-1,28],[0,2],[1,28],[0,2],[-1,37],[0,2],[1,62],[0,2],[-1,34],[0,1],[1,28],[0,1],[1,12],[-1,17],[1,5]],"13":[[0,8],[1,35],[-1,33],[1,25],[0,3],[-1,19],[0,3],[1,19],[0,3],[-1,18],[1,37],[-1,61],[1,66],[-1,49],[1,6],[0,1],[1,12],[0,2],[-1,3],[0,1],[-1,12],[0,4],[-1,36],[1,9],[0,3],[-1,5],[1,19],[0,3],[-1,18],[0,3],[1,18],[0,3],[-1,8],[1,32],[0,1],[-1,12],[0,6],[1,7],[-1,37],[0,1],[1,10],[-1,29],[1,15],[0,1],[-1,1],[1,12],[-1,35],[1,11],[0,2],[-1,11],[0,1],[1,72],[-1,13],[0,5],[1,8],[0,3],[1,1],[0,5],[-1,17],[0,1],[1,25],[-1,40],[0,1],[1,20],[0,2],[-1,2],[0,1],[-1,12],[0,3],[1,3],[-1,31],[1,46],[0,1],[-1,9],[1,17],[-1,77],[0,3],[1,12],[0,5],[-1,7],[1,33],[0,1],[-1,12],[0,3],[-1,6],[0,5],[1,16],[0,3],[-1,37],[1,10],[0,3],[1,3],[0,4],[-1,3],[0,2],[-1,28],[1,15],[-1,31],[1,29],[0,2],[-1,12],[0,6],[1,7],[0,3],[1,35],[0,2],[-1,7],[0,1],[-1,43],[0,1],[1,12],[-1,26],[1,61],[0,2],[-1,2],[0,1],[-1,12],[0,3],[1,10],[0,8],[-1,41],[0,2],[1,29],[0,2],[-1,9],[0,2],[-1,5],[0,5],[1,1],[0,2],[1,6],[-1,34],[0,1],[1,11],[-1,20],[0,3],[1,19],[0,3],[-1,19],[0,3],[1,38],[0,1],[-1,12],[0,3],[1,24],[-1,10],[0,3],[-1,3],[0,2],[-1,22],[0,2],[1,7],[0,1],[1,12],[0,2],[-1,11],[0,5],[1,30],[-1,6],[1,33],[-1,8],[0,2],[-1,11],[0,2],[1,10],[-1,9],[1,13],[0,2],[-1,2],[1,6],[-1,32],[0,2],[1,3],[0,1],[1,7],[-1,66],[1,5],[-1,13],[0,1],[1,12],[0,2],[-1,38],[1,50],[0,1],[-1,7]],"15":[[0,8],[1,35],[-1,79],[1,37],[0,2],[-1,13],[1,61],[-1,26],[0,3],[1,18],[-1,36],[1,25],[-1,12],[1,25],[-1,17],[1,24],[-1,46],[1,39],[0,2],[-1,82],[1,29],[-1,38],[1,25],[-1,23],[0,1],[1,62],[-1,30],[1,53],[-1,6],[1,35],[-1,33],[1,2],[-1,13],[0,1],[1,31],[-1,15],[1,39],[-1,10],[1,47],[-1,1],[0,2],[-1,11],[0,6],[1,5],[-1,44],[1,2],[0,1],[1,12],[0,4],[-1,58],[0,1],[1,2],[0,1],[1,12],[0,1],[1,21],[-1,12],[0,7],[1,6],[-1,6],[0,2],[-1,24],[0,1],[1,6],[-1,18],[1,41],[0,1],[-1,10],[1,44],[0,1],[-1,12],[0,2],[1,12],[-1,42],[0,1],[1,28],[0,1],[-1,34],[0,1],[1,12],[0,1],[1,6],[-1,35],[1,12],[0,6],[-1,20],[0,1],[1,12],[0,6],[-1,7],[0,1],[1,9],[0,6],[-1,7],[0,4],[1,1],[0,2],[1,11],[0,4],[-1,8],[1,7],[0,1],[1,12],[0,2],[-1,2],[1,4],[-1,28],[1,15],[-1,39],[1,16],[-1,62],[1,9],[0,2],[1,7],[0,6],[-1,11],[0,5],[1,1],[0,5],[1,3],[0,118],[1,34],[0,1],[-1,9],[1,27],[0,1],[-1,12],[0,6],[1,35],[-1,3],[0,1],[-1,11],[0,2],[1,12],[0,4],[-1,37],[0,2],[1,20],[-1,32],[0,2],[1,31],[0,1],[-1,12],[0,6],[1,54]],"16":[[0,8],[-1,41],[0,2],[1,25],[0,1],[-1,21],[0,2],[1,67],[-1,46],[1,46],[0,2],[-1,5],[1,21],[-1,80],[0,2],[1,61],[-1,35],[1,17],[-1,47],[1,41],[0,1],[-1,42],[0,2],[1,12],[-1,24],[1,61],[-1,37],[0,2],[1,47],[0,2],[-1,18],[0,3],[1,7],[-1,26],[1,33],[-1,37],[1,29],[-1,36],[1,60],[0,2],[-1,55],[1,50],[0,2],[1,16],[0,1],[-1,27],[0,3],[1,19],[0,3],[-1,18],[1,36],[-1,41],[1,12],[-1,67],[0,3],[1,19],[0,3],[-1,3],[1,49],[0,3],[-1,18],[0,3],[1,2],[-1,44],[0,1],[1,87],[-1,37],[1,33],[-1,3],[0,1],[-1,12],[0,3],[1,21],[-1,32],[1,14],[0,3],[1,36],[-1,10],[0,7],[-1,42],[0,2],[1,1],[0,1],[1,10],[-1,29],[0,2],[1,7],[0,1],[1,9],[-1,43],[1,16],[0,1],[-1,24],[1,78],[0,2],[-1,11],[0,4],[-1,74],[0,1],[1,1],[0,1],[1,7],[-1,21],[1,18],[0,1],[-1,12],[0,2],[1,43],[0,1],[-1,12],[0,1],[1,4],[-1,26],[0,1],[1,12],[0,6],[-1,7],[0,3],[-1,1],[0,1],[1,27],[0,2],[-1,3],[0,1],[-1,9],[1,31]],"17":[[0,8],[-1,39],[0,1],[1,60],[-1,44],[0,2],[1,34],[-1,25],[1,33],[-1,27],[0,3],[1,19],[0,3],[-1,19],[0,3],[1,19],[0,3],[-1,19],[0,3],[1,48],[0,2],[-1,4],[1,32],[0,2],[-1,64],[0,1],[1,5],[-1,20],[0,2],[1,76],[0,1],[-1,29],[0,1],[1,24],[-1,12],[1,26],[0,2],[-1,68],[0,3],[1,48],[-1,15],[1,23],[-1,24],[1,43],[0,2],[-1,19],[1,42],[-1,34],[0,2],[1,28],[0,2],[-1,20],[0,3],[1,5],[-1,23],[1,54],[0,2],[-1,32],[1,17],[-1,25],[0,1],[1,44],[-1,46],[0,2],[1,19],[-1,5],[1,13],[0,1],[-1,43],[1,27],[-1,21],[0,2],[1,29],[0,1],[-1,25],[0,1],[1,25],[0,1],[-1,12],[0,6],[1,7],[0,1],[-1,31],[1,25],[-1,34],[0,2],[1,29],[0,1],[-1,12],[0,1],[-1,10],[0,2],[1,9],[0,2],[1,40],[-1,8],[0,2],[-1,7],[1,23],[-1,4],[0,1],[-1,32],[0,1],[1,3],[-1,38],[1,9],[0,2],[1,4],[0,3],[-1,4],[0,1],[-1,2],[1,49],[-1,15],[1,14],[-1,20],[1,10],[0,3],[-1,34],[1,44],[0,2],[-1,19],[0,2],[1,11],[0,7],[-1,16],[0,2],[1,1],[0,1],[1,27],[0,2],[-1,9],[0,2],[-1,5],[0,5],[1,39],[-1,31],[0,2],[1,7],[-1,13],[0,2],[1,11],[0,7],[-1,70],[0,3],[1,12],[0,3],[-1,10],[0,1],[1,26]]};
 
 // ---------- copy ----------
 const COPY = {
   ready: '準備……', go: '出發！',
-  label: { [T_NORMAL]: '穩穩的，放心踩', [T_CRUMBLE]: '踩一下就碎掉！', [T_SPRING]: '咻～會彈起來', [T_CONVEYOR]: '會把你往旁邊送', [T_SPIKE]: '有刺！踩到會痛' },
-  names: { [T_NORMAL]: '石板', [T_CRUMBLE]: '碎石板', [T_SPRING]: '彈簧', [T_CONVEYOR]: '輸送帶', [T_SPIKE]: '釘板' },
+  label: { [T_NORMAL]: '穩穩的，放心踩', [T_CRUMBLE]: '踩一下就碎掉！', [T_SPRING]: '咻～會彈起來', [T_CONVEYOR]: '會把你往旁邊送', [T_SPIKE]: '有刺！踩到會痛', [T_ROLLER]: '會一直滑！按反方向撐住', [T_PHANTOM]: '假的！踩了會穿過去' },
+  names: { [T_NORMAL]: '石板', [T_CRUMBLE]: '碎石板', [T_SPRING]: '彈簧', [T_CONVEYOR]: '輸送帶', [T_SPIKE]: '釘板', [T_ROLLER]: '圓滾板', [T_PHANTOM]: '假台階' },
   ceiling: '別撞到天花板的刺！', bottom: '掉出畫面下方就出局！',
   speed: '加速了！', unlock: n => `解鎖造型：${n}！`, out: p => `${p} 出局！`, near: n => `距離紀錄還剩 ${n} 階`, record: '新紀錄！',
   b100: '百階達成！', get b100sub() { return `地下 100 階‧${(STRATA.find(z => z.from === 100) || {}).name || ''}`; }, bn: n => `地下 ${n} 階！`, best: '最佳',
@@ -6411,7 +6462,7 @@ function switchTheme(id) {
   d.theme = id; d.skin = sel[0]; d.skin2 = sel[1]; Save.write();
   applyTheme(id); return true;
 }
-const DEMO_SEEDS = [9, 15, 17, 20, 22, 23]; // decent bot survives 40 s with no hits and uses 4 platform types (scratchpad seeds.js)
+const DEMO_SEEDS = [5, 10, 13, 15, 16, 17]; // decent bot survives 40 s with no hits and uses 4 platform types (scratchpad seeds.js)
 
 // ---------- run / cosmetic state ----------
 let run = null;   // {sim, profile, startBest, unlockedAtStart, labels, toasts, banners, ...}
@@ -6596,6 +6647,11 @@ function handleEvents(s, cosmetic) {
       case 'land': {
         for (let i = 0; i < 7; i++) spawnP({ x: e.x + rnd(-6, 6), y: e.y - 1, vx: rnd(30, 80) * (Math.random() < .5 ? -1 : 1), vy: rnd(-60, -10), g: 200, life: .3, s: rnd(2, 3), col: pal.dust });
         const HX = e.who === 1 ? Hero2 : Hero; HX.sq = .75; HX.sqv = 0; if (!quiet) Audio.play('land');
+        break;
+      }
+      case 'phase': {
+        for (let i = 0; i < 6; i++) spawnP({ kind: 'twinkle', x: e.x + rnd(-10, 10), y: e.y + rnd(-2, 6), vx: rnd(-20, 20), vy: rnd(-30, 10), g: 0, life: .5, s: 1.6, col: ['#B9F0FF', '#FFC9F2', '#FFF2A8'][i % 3] });
+        if (!quiet) Audio.play('phase');
         break;
       }
       case 'heal': if (!quiet) { addFloater('+1', e.x, e.y - 30, '#6BD08B', true); Audio.play('heal'); } break;
@@ -7012,7 +7068,7 @@ const UI = {
   buildHowto() {
     $('#howtoCtrl').textContent = (Input.lastTouch || (L.coarse && !Input.anyKey)) ? '按住左半邊往左，按住右半邊往右' : '← → 或 A D 左右移動｜Esc 暫停';
     const host = $('#legend'); if (host.childElementCount) return;
-    for (const t of [T_NORMAL, T_CRUMBLE, T_SPRING, T_CONVEYOR, T_SPIKE]) {
+    for (const t of [T_NORMAL, T_CRUMBLE, T_SPRING, T_CONVEYOR, T_SPIKE, T_ROLLER, T_PHANTOM]) {
       const row = document.createElement('div'); row.className = 'lg';
       const c = mkCanvas(128, 48); const x = c.getContext('2d'); x.scale(2, 2); x.fillStyle = '#2B1D14'; x.fillRect(0, 0, 64, 24);
       x.save(); x.translate(-((180 - 44) - 10), 0);
@@ -7265,7 +7321,7 @@ function drawPlayer(c, S, px, py, camY, tick, onTitle, who = 0) {
 function drawTextOverlays(c, S, camY, onTitle) {
   if (onTitle || !run) return;
   const st = App.state;
-  if (run.profile === 'onboard') {
+  { // captions: the onboarding lessons, plus the first roller / phantom of any run
     const hintOn = run.hint && !run.hintDone, bottomOn = run.bottomLabel >= 0 && run.bottomLabel < 2.5;
     for (const P of S.plats) if (P.label && P.solid) {
       const ly = P.top + 18 - camY; let t0 = run.labelsShown.get(P);
