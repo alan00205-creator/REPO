@@ -69,6 +69,8 @@
 | `src/template.html` | 網頁外框與介面樣式 |
 | `build.mjs` | 打包腳本：把 `src/` 合併成單一 `index.html` |
 | `tools/sim.mjs` | 平衡測試：不開瀏覽器，讓電腦對手跑完整關卡並統計結果 |
+| `tools/artifact.mjs` | 由 `index.html` 產生可發布到 claude.ai Artifact 的版本（去掉外層網頁標籤） |
+| `tools/icons.mjs` | 產生加到主畫面用的圖示 |
 | `tools/shot.mjs` | 瀏覽器截圖與流程測試（桌機、手機橫向、手機直向；完整一場比賽、觀戰、奪冠） |
 
 ## 修改與重新打包（開發者用）
