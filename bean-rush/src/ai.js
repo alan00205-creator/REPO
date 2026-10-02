@@ -13,6 +13,19 @@ export function groundAt(world, x, y, z, up = 1.2, down = 3) {
   return world.rayDown(x, y + up, z, up + down, true);
 }
 
+// Like groundAt, but a moving platform only counts if the spot will still be on it in
+// `lead` seconds (so bots don't step onto a block that is sliding away).
+const HIT = {};
+export function steadyGroundAt(world, x, y, z, up = 1.2, down = 3, lead = 0.5) {
+  const h = world.rayDown(x, y + up, z, up + down, true, HIT);
+  const body = HIT.shape && HIT.shape.body;
+  if (h === -Infinity || !body || !body.kinematic) return h;
+  const v = body.vel;
+  if (Math.abs(v.x) + Math.abs(v.y) + Math.abs(v.z) < 0.4) return h;
+  const h2 = world.rayDown(x - v.x * lead, y + up - v.y * lead, z - v.z * lead, up + down + 2, true, HIT);
+  return HIT.shape && HIT.shape.body === body ? h + v.y * lead : -Infinity;
+}
+
 export class Path {
   // nodes: [{x, z, w, lanes?, door?, slow?}]  segment i uses node i's properties
   constructor(nodes) {
@@ -184,6 +197,12 @@ export class PathBrain {
       tx += rx * off; tz += rz * off;
     }
 
+    // riding a moving block: go with it, only head forward
+    const gb = b.grounded && b.groundBody;
+    if (gb && gb.kinematic && gb.vel.lengthSq() > 0.3 && !gb.angVel.lengthSq()) {
+      tx = b.pos.x + dx * look;
+      tz = b.pos.z + dz * look;
+    }
     let mx = tx - b.pos.x, mz = tz - b.pos.z;
     let ml = Math.hypot(mx, mz) || 1;
     mx /= ml; mz /= ml;
@@ -222,17 +241,24 @@ export class PathBrain {
     // Gap logic
     if (b.grounded && b.state === 'normal') {
       const y = b.pos.y;
+      // look further ahead the faster we run relative to the floor, so there is room to brake
+      const rs = Math.hypot(b.vel.x - b.groundVel.x, b.vel.z - b.groundVel.z);
+      const dStop = Math.max(0.55, 0.4 + (rs * rs) / 70);
+      const gFar = steadyGroundAt(sim.world, b.pos.x + mx * dStop, y, b.pos.z + mz * dStop, 1.3, 2.6);
+      const gapFar = gFar === -Infinity || gFar < y - 2.5;
       // take off close to the edge: the feet can overhang it a little
-      const g1 = groundAt(sim.world, b.pos.x + mx * 0.55, y, b.pos.z + mz * 0.55, 1.3, 2.6);
-      if (g1 === -Infinity || g1 < y - 2.5) {
-        const g2 = groundAt(sim.world, b.pos.x + mx * 2.4, y, b.pos.z + mz * 2.4, 1.2, 1.8);
-        const g3 = groundAt(sim.world, b.pos.x + mx * 3.6, y, b.pos.z + mz * 3.6, 1.0, 1.8);
+      const g1 = dStop > 0.6 ? steadyGroundAt(sim.world, b.pos.x + mx * 0.55, y, b.pos.z + mz * 0.55, 1.3, 2.6) : gFar;
+      const gapNear = g1 === -Infinity || g1 < y - 2.5;
+      if (gapFar) {
+        const g2 = steadyGroundAt(sim.world, b.pos.x + mx * 2.4, y, b.pos.z + mz * 2.4, 1.2, 1.8);
+        const g3 = steadyGroundAt(sim.world, b.pos.x + mx * 3.6, y, b.pos.z + mz * 3.6, 1.0, 1.8);
         const ok2 = g2 > y - 1.8 && g2 < y + 1.0;
         const ok3 = g3 > y - 1.8 && g3 < y + 0.9;
         if (ok2 || ok3) {
-          wantJump = true;
+          // a landing exists: keep running and jump right at the edge
+          if (gapNear) wantJump = true;
           this.waitT = 0;
-          if (!ok2 && ok3) this.diveLater = 0.32;
+          if (gapNear && !ok2 && ok3) this.diveLater = 0.32;
         } else {
           this.waitT += dt;
           wantWait = this.waitT < 3 + this.skill * 3;

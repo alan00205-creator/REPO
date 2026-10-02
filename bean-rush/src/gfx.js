@@ -355,6 +355,46 @@ export class Gfx {
     });
   }
 
+  // Square floor tiles drawn as one instanced mesh. Each tile: {x, top, z, color, flash (0-1), gone}.
+  gridTiles(tiles, size, h) {
+    const geo = new BoxGeometry(size * 0.98, h, size * 0.98);
+    const col = [];
+    const nrm = geo.getAttribute('normal');
+    for (let i = 0; i < nrm.count; i++) {
+      const v = nrm.getY(i) > 0.5 ? 1 : nrm.getY(i) < -0.5 ? 0.55 : 0.8;
+      col.push(v, v, v);
+    }
+    geo.setAttribute('color', new Float32BufferAttribute(col, 3));
+    const mat = new MeshPhongMaterial({ vertexColors: true, shininess: 35, specular: 0x333333 });
+    this.owned.push(mat);
+    const im = new InstancedMesh(geo, mat, tiles.length);
+    im.castShadow = false;
+    im.receiveShadow = this.shadows;
+    const cols = new Map();
+    const hot = new Color('#ffffff');
+    const tmp = new Color();
+    const o = new Object3D();
+    this.root.add(im);
+    this.updaters.push((alpha, dt, time) => {
+      let n = 0;
+      for (const t of tiles) {
+        if (t.gone) continue;
+        if (!cols.has(t.color)) cols.set(t.color, new Color(t.color));
+        tmp.copy(cols.get(t.color));
+        if (t.flash > 0) tmp.lerp(hot, t.flash * (0.55 + 0.45 * Math.sin(time * 30)));
+        o.position.set(t.x, t.top - h / 2, t.z);
+        o.rotation.set(t.tilt || 0, 0, (t.tilt || 0) * 0.6);
+        o.updateMatrix();
+        im.setMatrixAt(n, o.matrix);
+        im.setColorAt(n, tmp);
+        n++;
+      }
+      im.count = n;
+      im.instanceMatrix.needsUpdate = true;
+      if (im.instanceColor) im.instanceColor.needsUpdate = true;
+    });
+  }
+
   hexTiles(L, S, HH) {
     const geo = new CylinderGeometry(S * 0.965, S * 0.965, HH * 2, 6, 1);
     // lighter top, darker sides
@@ -433,9 +473,10 @@ export class GeoBuilder {
   quad(m, spec, p0, p1, p2, p3, uv) {
     const g = this.group(spec);
     _m3.getNormalMatrix(m);
-    // (p1 - p0) x (p2 - p0): also valid for fan triangles where p3 === p0
-    const e1 = [p1[0] - p0[0], p1[1] - p0[1], p1[2] - p0[2]];
-    const e2 = [p2[0] - p0[0], p2[1] - p0[1], p2[2] - p0[2]];
+    // diagonals (p2 - p0) x (p3 - p1): also valid for fan triangles where p3 === p0
+    // and for wedges whose first two corners meet (a sector with no inner radius)
+    const e1 = [p2[0] - p0[0], p2[1] - p0[1], p2[2] - p0[2]];
+    const e2 = [p3[0] - p1[0], p3[1] - p1[1], p3[2] - p1[2]];
     _n.set(e1[1] * e2[2] - e1[2] * e2[1], e1[2] * e2[0] - e1[0] * e2[2], e1[0] * e2[1] - e1[1] * e2[0]).applyMatrix3(_m3).normalize();
     const pts = [p0, p1, p2, p0, p2, p3];
     const uvs = [uv[0], uv[1], uv[2], uv[0], uv[2], uv[3]];

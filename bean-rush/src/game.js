@@ -22,9 +22,13 @@ const TIPS = [
   '水果配對：先記住離你最近的幾塊地板。',
   '蜂巢崩落：一直移動，但別亂跑；跳躍可以少踩幾塊地板。',
   '珍奶大滾坡：珍珠滾下來時往旁邊閃。',
+  '隱形小路：別人踩過沒塌的地板就是真的。',
+  '穿牆大挑戰：牆還遠的時候就先移到洞的前面。',
+  '地板消消樂：開始閃的地板快消失了，馬上換位置。',
   '在造型裡用豆豆幣換帽子和花紋。',
 ];
 const PRACTICE_N = { race: 20, survival: 16, final: 10 };
+const PRACTICE_ORDER = ['gate', 'boba', 'bounce', 'blocks', 'logs', 'punch', 'tiptoe', 'fruit', 'ring', 'walls', 'rain', 'swing', 'hex', 'ringFinal', 'rainFinal', 'floor'];
 
 const tmpV = { x: 0, z: 0 };
 const V3 = new Vector3();
@@ -168,10 +172,13 @@ export class Game {
       cs.push({ id: i, name: names[i % names.length], look: randomLook(rng), skill: clamp((0.12 + rng() * 0.88) * easy, 0.05, 1), pace });
     }
     rng.shuffle(cs);
-    const r1 = rng.pick(['gate', 'boba']);
-    const r2 = rng.pick([r1 === 'gate' ? 'boba' : 'gate', 'fruit']);
-    const r3 = r2 === 'fruit' ? 'ring' : rng.pick(['ring', 'fruit']);
-    const fin = rng.pick(['hex', 'ringFinal']);
+    // the very first show opens on the gentlest courses; after that anything goes
+    const races = ['gate', 'boba', 'bounce', 'blocks', 'logs', 'punch', 'tiptoe'];
+    const survivals = ['fruit', 'ring', 'walls', 'rain', 'swing'];
+    const r1 = rng.pick(this.save.shows < 1 ? ['gate', 'boba'] : races);
+    const r2 = rng() < 0.6 ? rng.pick(races.filter((id) => id !== r1)) : rng.pick(survivals);
+    const r3 = rng.pick(survivals.filter((id) => id !== r2));
+    const fin = rng.pick(['hex', 'ringFinal', 'rainFinal', 'floor']);
     this.show = { contestants: cs, alive: cs.slice(), rounds: [r1, r2, r3, fin], idx: 0, coins: 0, playerOut: false, outRound: -1, rewarded: false };
     this.pendingNext = null;
     this.mode = 'show';
@@ -460,6 +467,22 @@ export class Game {
       this.vibrate(60);
     }
     this.finishedShown = true;
+    // across the line: your bean stops, and the camera goes to beans still racing
+    const me = this.sim.player;
+    me.frozen = true;
+    me.mx = me.mz = 0;
+    this.later(1.6, () => this.watchAfterFinish());
+  }
+
+  watchAfterFinish() {
+    const sim = this.sim;
+    if (this.state !== 'round' || !sim || sim.ended || this.spectate) return;
+    this.spectate = { idx: 0, qualified: true };
+    this.pickSpectate(0);
+    $('spec').hidden = false;
+    $('specLeave').hidden = true;
+    this.refreshTouch();
+    UI.feed('你已晉級，來看看還在跑的豆豆！');
   }
 
   onPlayerOut() {
@@ -524,6 +547,7 @@ export class Game {
     this.pickSpectate(0);
     $('hud').hidden = false;
     $('spec').hidden = false;
+    $('specLeave').hidden = false;
     this.refreshTouch();
     if (this.sub === 'results') this.nextRound();
   }
@@ -561,7 +585,7 @@ export class Game {
       }
       return;
     }
-    if (me && !this.spectate && !this.show.playerOut) {
+    if (me && (!this.spectate || this.spectate.qualified) && !this.show.playerOut) {
       const ok = sim.qualified.includes(me);
       if (!ok) {
         // race: time ran out / quota filled before we crossed
@@ -625,7 +649,8 @@ export class Game {
     }
     s.alive = qual;
     const mine = me && qual.includes(me.contestant);
-    UI.setText('rTitle', this.spectate ? '回合結果' : mine ? '晉級下一回合！' : '回合結果');
+    const watching = this.spectate && !this.spectate.qualified;
+    UI.setText('rTitle', watching ? '回合結果' : mine ? '晉級下一回合！' : '回合結果');
     $('rTitle').style.color = mine ? 'var(--mint)' : '';
     UI.setText('rSub', `${qual.length} 位豆豆晉級，${sim.beans.length - qual.length} 位淘汰`);
     const crowd = $('rCrowd');
@@ -643,7 +668,7 @@ export class Game {
     act.innerHTML = '';
     const go = btn(next === 3 ? '前往決賽' : '下一回合', 'pink', () => this.nextRound());
     act.append(go);
-    if (this.spectate) act.append(btn('回到大廳', 'white', () => this.leaveShow()));
+    if (watching) act.append(btn('回到大廳', 'white', () => this.leaveShow()));
     UI.screen('results');
     this.sound.play(mine ? 'cheer' : 'chime', { vol: 0.6 });
     let left = 7;
@@ -782,7 +807,8 @@ export class Game {
       if (this.sub === 'play' && sim.phase === 'over') this.sub = 'over';
       if (this.sub === 'over' && sim.phase === 'done') this.showResults();
       if (this.sub === 'play' || this.sub === 'over' || this.sub === 'count') this.renderHud();
-      if (this.spectate && this.spectate.bean && (!this.spectate.bean.active || this.spectate.bean.out)) this.pickSpectate(1);
+      const sb = this.spectate && this.spectate.bean;
+      if (sb && (!sb.active || sb.out || (sim.type === 'race' && sb.finished && sim.phase === 'play'))) this.pickSpectate(1);
     }
 
     // camera
@@ -949,7 +975,7 @@ export class Game {
       this.tutorialT -= 1 / 60;
       msg = this.input.mode === 'touch' ? '左邊拖曳移動・右邊滑動轉鏡頭' : this.input.mode === 'pad' ? '左搖桿移動・A 跳・B 飛撲' : 'WASD 移動・空白鍵跳・Shift 飛撲・拖曳滑鼠轉鏡頭';
       if (this.tutorialT <= 0) $('stickHint').style.opacity = '0';
-    } else if (me && me.finished && this.mode === 'show' && !this.spectate) msg = '你晉級了！等其他豆豆過線…';
+    } else if (me && me.finished && this.mode === 'show' && (!this.spectate || this.spectate.qualified)) msg = '你晉級了！正在看其他豆豆過線…';
     else if (warn && sim.type === 'race') msg = `只剩 ${sim.quota - sim.qualified.length} 個名額！`;
     else if (this.spectate) msg = '';
     UI.setText('hudMsg', msg);
@@ -1072,7 +1098,7 @@ export class Game {
   openPractice() {
     const list = $('lvlList');
     list.innerHTML = '';
-    for (const id of ['gate', 'boba', 'fruit', 'ring', 'hex', 'ringFinal']) {
+    for (const id of PRACTICE_ORDER) {
       const d = LEVELS[id];
       const b = document.createElement('button');
       b.className = 'lvl';

@@ -92,6 +92,10 @@ if (scenario === 'lobby') {
   await page.evaluate(() => { const g = window.__game, s = g.sim; s.finishBean(s.player); s.emit('finish', s.player, s.player.place); g.handleEvents(); });
   await page.waitForTimeout(500);
   await shot('3-qualified');
+  // the finished player is frozen and the camera moves on to beans still running
+  await page.waitForTimeout(2500);
+  await shot('3b-watching');
+  console.log('after finish', JSON.stringify(await page.evaluate(() => { const g = window.__game, s = g.sim; return { frozen: s.player.frozen, spec: !!g.spectate, qualified: g.spectate && g.spectate.qualified, watching: g.spectate && g.spectate.bean && g.spectate.bean.name, watchingFinished: !!(g.spectate && g.spectate.bean && g.spectate.bean.finished), specBar: !document.getElementById('spec').hidden, leaveBtn: !document.getElementById('specLeave').hidden }; })));
   await page.evaluate(() => { const s = window.__game.sim; for (const b of s.beans) if (!b.finished && s.qualified.length < s.quota) s.finishBean(b); });
   await until(() => window.__game.sub === 'results');
   await page.waitForTimeout(600);
