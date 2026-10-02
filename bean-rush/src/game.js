@@ -454,20 +454,19 @@ export class Game {
   }
 
   onPlayerFinish(place) {
+    const qualified = place <= this.sim.quota;
     if (this.mode === 'practice') {
       this.sound.play('qualify');
       UI.big('完成！', 'good anim', `第 ${place} 名・${formatTime(this.sim.t)}`, 2400);
-      this.later(2.2, () => this.sim && !this.sim.ended && this.sim.endRound('practice'));
-      return;
-    }
-    const qualified = place <= this.sim.quota;
-    if (qualified) {
+    } else if (qualified) {
       this.sound.play('qualify');
       UI.big('晉級！', 'good anim', `第 ${place} 名過線`, 2200);
       this.vibrate(60);
     }
     this.finishedShown = true;
     // across the line: your bean stops, and the camera goes to beans still racing
+    this.tutorialT = 0;
+    $('stickHint').style.opacity = '0';
     const me = this.sim.player;
     me.frozen = true;
     me.mx = me.mz = 0;
@@ -480,9 +479,12 @@ export class Game {
     this.spectate = { idx: 0, qualified: true };
     this.pickSpectate(0);
     $('spec').hidden = false;
-    $('specLeave').hidden = true;
+    // practice has no next round to wait for, so offer a way straight to the results
+    const practice = this.mode === 'practice';
+    $('specLeave').hidden = !practice;
+    $('specLeave').textContent = '看結果';
     this.refreshTouch();
-    UI.feed('你已晉級，來看看還在跑的豆豆！');
+    UI.feed(practice ? '你完成了，來看看還在跑的豆豆！' : '你已晉級，來看看還在跑的豆豆！');
   }
 
   onPlayerOut() {
@@ -548,6 +550,7 @@ export class Game {
     $('hud').hidden = false;
     $('spec').hidden = false;
     $('specLeave').hidden = false;
+    $('specLeave').textContent = '離開';
     this.refreshTouch();
     if (this.sub === 'results') this.nextRound();
   }
@@ -976,6 +979,7 @@ export class Game {
       msg = this.input.mode === 'touch' ? '左邊拖曳移動・右邊滑動轉鏡頭' : this.input.mode === 'pad' ? '左搖桿移動・A 跳・B 飛撲' : 'WASD 移動・空白鍵跳・Shift 飛撲・拖曳滑鼠轉鏡頭';
       if (this.tutorialT <= 0) $('stickHint').style.opacity = '0';
     } else if (me && me.finished && this.mode === 'show' && (!this.spectate || this.spectate.qualified)) msg = '你晉級了！正在看其他豆豆過線…';
+    else if (me && me.finished && this.mode === 'practice' && this.spectate) msg = '你完成了！正在看其他豆豆過線…';
     else if (warn && sim.type === 'race') msg = `只剩 ${sim.quota - sim.qualified.length} 個名額！`;
     else if (this.spectate) msg = '';
     UI.setText('hudMsg', msg);
@@ -1004,7 +1008,11 @@ export class Game {
     click('sDone', () => { this.sound.play('click'); this.enterLobby(); });
     click('specPrev', () => this.pickSpectate(-1));
     click('specNext', () => this.pickSpectate(1));
-    click('specLeave', () => { this.sound.play('back'); this.enterLobby(); });
+    click('specLeave', () => {
+      this.sound.play('back');
+      if (this.mode === 'practice') { if (this.sim && !this.sim.ended) this.sim.endRound('practice'); }
+      else this.enterLobby();
+    });
     $('intro').addEventListener('pointerdown', () => { this.sound.unlock(); if (this.introT > 0.3) this.skipIntro(); });
     document.querySelectorAll('[data-close]').forEach((b) => b.addEventListener('click', () => {
       this.sound.play('back');

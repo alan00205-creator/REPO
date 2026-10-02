@@ -93,7 +93,8 @@ if (scenario === 'lobby') {
   await page.waitForTimeout(500);
   await shot('3-qualified');
   // the finished player is frozen and the camera moves on to beans still running
-  await page.waitForTimeout(2500);
+  await until(() => window.__game.spectate && !document.getElementById('spec').hidden);
+  await page.waitForTimeout(600);
   await shot('3b-watching');
   console.log('after finish', JSON.stringify(await page.evaluate(() => { const g = window.__game, s = g.sim; return { frozen: s.player.frozen, spec: !!g.spectate, qualified: g.spectate && g.spectate.qualified, watching: g.spectate && g.spectate.bean && g.spectate.bean.name, watchingFinished: !!(g.spectate && g.spectate.bean && g.spectate.bean.finished), specBar: !document.getElementById('spec').hidden, leaveBtn: !document.getElementById('specLeave').hidden }; })));
   await page.evaluate(() => { const s = window.__game.sim; for (const b of s.beans) if (!b.finished && s.qualified.length < s.quota) s.finishBean(b); });
@@ -166,6 +167,13 @@ if (scenario === 'lobby') {
   await shot('pause');
   await page.click('#pResume');
   await page.evaluate(() => { const g = window.__game, s = g.sim; s.finishBean(s.player); s.emit('finish', s.player, 1); g.handleEvents(); });
+  // practice too: the bean stops and the camera watches the rest until you ask for results
+  // (wait on game state: the software renderer runs game time slower than wall time)
+  await until(() => window.__game.spectate && !document.getElementById('spec').hidden);
+  await page.waitForTimeout(600);
+  await shot('practice-watching');
+  console.log('practice after finish', JSON.stringify(await page.evaluate(() => { const g = window.__game, s = g.sim; return { sub: g.sub, frozen: s.player.frozen, spec: !!g.spectate, watching: g.spectate && g.spectate.bean && g.spectate.bean.name, specBar: !document.getElementById('spec').hidden, leave: document.getElementById('specLeave').hidden ? null : document.getElementById('specLeave').textContent, msg: document.getElementById('hudMsg').textContent }; })));
+  await page.click('#specLeave');
   await until(() => window.__game.sub === 'results');
   await page.waitForTimeout(500);
   await shot('practice-results');
