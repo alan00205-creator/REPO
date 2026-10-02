@@ -1,0 +1,460 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#3fa9ff">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="description" content="豆豆大闖關：致敬糖豆人的瀏覽器 3D 派對闖關遊戲，手機電腦都能玩。">
+<title>豆豆大闖關</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect x='14' y='4' width='36' height='56' rx='18' fill='%23ff86c8' stroke='%232b2d5c' stroke-width='4'/%3E%3Cellipse cx='32' cy='22' rx='13' ry='8' fill='%23ffe8d4'/%3E%3Ccircle cx='27' cy='22' r='3.5' fill='%232b2d5c'/%3E%3Ccircle cx='37' cy='22' r='3.5' fill='%232b2d5c'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Huninn&family=Titan+One&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#2b2d5c; --ink2:#1d1f45; --pink:#ff5fa2; --pink2:#ff8cc4; --yellow:#ffd23f; --yellow2:#ffe680; --cyan:#3fc8ff;
+  --mint:#4fd8a3; --purple:#8b6cff; --paper:#fffaf3; --muted:#6b6d99; --red:#ff4f64;
+  --f-zh:"Huninn","Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;
+  --f-en:"Titan One","Huninn","Arial Rounded MT Bold","Arial Black",sans-serif;
+  --sat:env(safe-area-inset-top,0px); --sar:env(safe-area-inset-right,0px); --sab:env(safe-area-inset-bottom,0px); --sal:env(safe-area-inset-left,0px);
+  color-scheme:light;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none!important}
+html,body{margin:0;height:100%;overflow:hidden;background:#3fa9ff;overscroll-behavior:none;touch-action:none}
+body{font-family:var(--f-zh);color:var(--ink);-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-text-size-adjust:100%}
+button,input,select{font-family:inherit;color:inherit}
+#app{position:fixed;inset:0;overflow:hidden}
+#gl{position:absolute;inset:0;width:100%;height:100%;display:block;outline:none}
+#touchLayer{position:absolute;inset:0;touch-action:none}
+.layer{position:absolute;inset:0;pointer-events:none}
+.layer > *{pointer-events:auto}
+.en{font-family:var(--f-en);letter-spacing:.02em}
+
+/* ---------- shared widgets ---------- */
+.btn{appearance:none;border:3px solid var(--ink);background:var(--yellow);color:var(--ink);font-weight:900;font-size:clamp(16px,2.4vmin + 8px,22px);
+  padding:.55em 1.3em;border-radius:999px;box-shadow:0 5px 0 var(--ink);cursor:pointer;transition:transform .08s,box-shadow .08s,filter .15s;
+  display:inline-flex;align-items:center;justify-content:center;gap:.45em;line-height:1.1;white-space:nowrap;touch-action:manipulation}
+.btn:active,.btn.pressed{transform:translateY(4px);box-shadow:0 1px 0 var(--ink)}
+.btn:hover{filter:brightness(1.05)}
+.btn:focus-visible{outline:3px solid #fff;outline-offset:3px}
+.btn.pink{background:var(--pink);color:#fff}
+.btn.cyan{background:var(--cyan)}
+.btn.white{background:#fff}
+.btn.mint{background:var(--mint)}
+.btn.small{font-size:15px;padding:.45em 1em;box-shadow:0 4px 0 var(--ink)}
+.btn.icon{padding:.5em;width:52px;height:52px;border-radius:50%}
+.btn svg{width:1.2em;height:1.2em;flex:none}
+.btn.big{font-size:clamp(20px,3vmin + 12px,32px);padding:.5em 1.6em}
+.panel{background:var(--paper);border:3px solid var(--ink);border-radius:26px;box-shadow:0 8px 0 var(--ink),0 18px 40px rgba(20,10,60,.25)}
+.title-text{font-family:var(--f-en);font-weight:900;color:#fff;paint-order:stroke fill;-webkit-text-stroke:6px var(--ink);text-shadow:0 6px 0 var(--ink)}
+.chip{display:inline-flex;align-items:center;gap:6px;background:#fff;border:3px solid var(--ink);border-radius:999px;padding:4px 12px 4px 6px;font-weight:900;font-size:17px;box-shadow:0 3px 0 var(--ink)}
+.chip svg{width:24px;height:24px}
+.scrim{position:absolute;inset:0;background:rgba(40,25,90,.38);backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px)}
+.center{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:calc(12px + var(--sat)) calc(16px + var(--sar)) calc(12px + var(--sab)) calc(16px + var(--sal))}
+.pop{animation:pop .42s cubic-bezier(.2,1.6,.4,1) both}
+@keyframes pop{0%{transform:scale(.4);opacity:0}100%{transform:none;opacity:1}}
+.slideup{animation:slideup .45s cubic-bezier(.2,1.2,.4,1) both}
+@keyframes slideup{0%{transform:translateY(40px);opacity:0}100%{transform:none;opacity:1}}
+
+/* ---------- loading ---------- */
+#loading{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;background:linear-gradient(#3fa9ff,#bfe6ff 70%,#ffd9f0);z-index:50;transition:opacity .5s}
+#loading.done{opacity:0;pointer-events:none}
+.bean-ico{width:46px;height:70px;border-radius:23px;background:var(--pink2);border:3px solid var(--ink);position:relative}
+.bean-ico::before{content:"";position:absolute;left:8px;right:8px;top:12px;height:18px;border-radius:50%;background:#ffe8d4}
+.bean-ico::after{content:"";position:absolute;left:13px;top:17px;width:7px;height:8px;border-radius:50%;background:var(--ink);box-shadow:12px 0 0 var(--ink)}
+#loading .bean-ico{animation:hop .6s cubic-bezier(.3,0,.5,1) infinite alternate}
+@keyframes hop{0%{transform:translateY(0) scale(1.08,.92)}30%{transform:translateY(-6px) scale(.95,1.06)}100%{transform:translateY(-40px) scale(1,1)}}
+#loading .t{font-weight:900;color:#fff;font-size:20px;text-shadow:0 2px 0 var(--ink)}
+
+/* ---------- title / lobby ---------- */
+#title{display:grid;grid-template-columns:1fr auto;grid-template-rows:auto 1fr auto;height:100%;padding:calc(14px + var(--sat)) calc(18px + var(--sar)) calc(16px + var(--sab)) calc(18px + var(--sal))}
+#title .top{grid-column:1/3;display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+#logo{margin:0;line-height:.95}
+#logo .zh{display:block;font-family:var(--f-zh);font-size:clamp(38px,7.5vmin + 10px,78px);color:#fff;font-weight:900;-webkit-text-stroke:7px var(--ink);paint-order:stroke fill;text-shadow:0 7px 0 var(--ink);letter-spacing:.04em;transform:rotate(-3deg);transform-origin:left}
+#logo .en{display:inline-block;margin-top:10px;font-size:clamp(14px,1.6vmin + 9px,22px);color:var(--ink);background:var(--yellow);border:3px solid var(--ink);border-radius:10px;padding:2px 10px;transform:rotate(-3deg)}
+#title .stats{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+#title .menu{grid-column:2;grid-row:3;display:flex;flex-direction:column;gap:12px;align-items:stretch;min-width:min(260px,44vw)}
+#title .side{grid-column:1;grid-row:3;align-self:end;display:flex;gap:10px;flex-wrap:wrap}
+#title .hello{font-weight:900;color:#fff;text-shadow:0 2px 0 var(--ink);font-size:15px;margin-top:6px}
+@media (orientation:portrait){
+  #title{grid-template-columns:1fr;grid-template-rows:auto 1fr auto auto}
+  #title .top{grid-column:1;flex-direction:column}
+  #title .stats{justify-content:flex-start}
+  #title .menu{grid-column:1;grid-row:3;min-width:0}
+  #title .side{grid-row:4;margin-top:12px;justify-content:center}
+}
+
+/* ---------- generic dialogs ---------- */
+.dlg{position:relative;width:min(560px,100%);max-height:100%;display:flex;flex-direction:column;overflow:hidden}
+.dlg header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;padding:14px 16px 10px 20px;border-bottom:3px dashed rgba(43,45,92,.18)}
+.dlg h2{margin:0;font-size:24px;font-weight:900;white-space:nowrap}
+.dlg .body{padding:14px 20px 20px;overflow:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y}
+.dlg footer{padding:12px 16px 16px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap;border-top:3px dashed rgba(43,45,92,.18)}
+.row{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:10px 0;border-bottom:2px solid rgba(43,45,92,.08);font-weight:700}
+.row:last-child{border-bottom:0}
+.row label{flex:1}
+.row input[type=range]{width:min(220px,45vw);accent-color:var(--pink)}
+.seg{display:inline-flex;border:3px solid var(--ink);border-radius:999px;overflow:hidden;background:#fff}
+.seg button{border:0;background:none;padding:6px 12px;font-weight:900;font-size:14px;cursor:pointer}
+.seg button.on{background:var(--yellow)}
+.toggle{width:58px;height:32px;border-radius:999px;border:3px solid var(--ink);background:#d8d6ee;position:relative;cursor:pointer;flex:none;padding:0}
+.toggle::after{content:"";position:absolute;top:2px;left:2px;width:22px;height:22px;border-radius:50%;background:#fff;border:2px solid var(--ink);transition:left .15s}
+.toggle.on{background:var(--mint)}
+.toggle.on::after{left:28px}
+.note{font-size:13px;color:var(--muted);font-weight:700;line-height:1.5}
+.help h3{margin:14px 0 6px;font-size:18px}
+.help table{width:100%;border-collapse:collapse;font-size:15px}
+.help td{padding:6px 4px;border-bottom:2px solid rgba(43,45,92,.08);vertical-align:top}
+.help td:first-child{font-weight:900;white-space:nowrap;width:30%}
+kbd{display:inline-block;border:2px solid var(--ink);border-bottom-width:4px;border-radius:6px;padding:0 6px;font-family:var(--f-en);font-size:13px;background:#fff;margin:1px}
+
+/* ---------- practice ---------- */
+.levels{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+.lvl{border:3px solid var(--ink);border-radius:18px;background:#fff;padding:12px;text-align:left;cursor:pointer;box-shadow:0 4px 0 var(--ink);display:flex;flex-direction:column;gap:4px;transition:transform .08s}
+.lvl:active{transform:translateY(3px);box-shadow:0 1px 0 var(--ink)}
+.lvl b{font-size:19px}
+.lvl small{font-size:12px;color:var(--muted);font-weight:700;line-height:1.4}
+.tag{align-self:flex-start;font-size:12px;font-weight:900;border-radius:999px;padding:2px 9px;border:2px solid var(--ink);background:var(--cyan)}
+.tag.survival{background:var(--mint)}
+.tag.final{background:var(--yellow)}
+
+/* ---------- customise ---------- */
+#custom{display:flex;align-items:flex-end;justify-content:flex-end;height:100%;padding:calc(12px + var(--sat)) calc(14px + var(--sar)) calc(12px + var(--sab)) calc(14px + var(--sal))}
+#custom .dlg{width:min(470px,58vw);height:100%}
+#custom .back{position:absolute;left:calc(14px + var(--sal));top:calc(12px + var(--sat))}
+#custom .coinchip{position:absolute;left:calc(14px + var(--sal));bottom:calc(14px + var(--sab))}
+.tabs{display:flex;gap:6px;flex-wrap:wrap}
+.tabs button{border:3px solid var(--ink);border-radius:999px;background:#fff;font-weight:900;padding:5px 12px;cursor:pointer;font-size:15px}
+.tabs button.on{background:var(--pink);color:#fff}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(78px,1fr));gap:10px;margin-top:12px}
+.item{position:relative;border:3px solid var(--ink);border-radius:16px;background:#fff;aspect-ratio:1/1.08;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;font-weight:900;font-size:13px;padding:6px 4px;text-align:center;line-height:1.15}
+.item.on{background:var(--yellow2);box-shadow:inset 0 0 0 3px var(--yellow)}
+.item.locked{background:#ecebf7;color:var(--muted)}
+.item .sw{width:38px;height:38px;border-radius:50%;border:3px solid var(--ink)}
+.item .price{position:absolute;right:-6px;top:-8px;background:var(--yellow);border:2px solid var(--ink);border-radius:999px;font-size:12px;padding:1px 6px;display:flex;align-items:center;gap:2px}
+.item .price svg{width:13px;height:13px}
+.item .lock{font-size:11px;font-weight:700}
+.nameRow{display:flex;gap:8px;align-items:center;margin-bottom:10px}
+.nameRow input{flex:1;min-width:0;border:3px solid var(--ink);border-radius:12px;padding:7px 10px;font-weight:900;font-size:16px;background:#fff;-webkit-user-select:text;user-select:text}
+@media (orientation:portrait){
+  #custom{align-items:flex-end;justify-content:center}
+  #custom .dlg{width:100%;height:56%}
+  #custom .coinchip{top:calc(70px + var(--sat));bottom:auto}
+}
+
+/* ---------- matchmaking ---------- */
+#match .card{padding:22px 30px;text-align:center;min-width:min(380px,90vw)}
+#match h2{margin:0 0 6px;font-size:22px}
+#match .count{font-family:var(--f-en);font-size:56px;line-height:1;color:var(--pink);-webkit-text-stroke:3px var(--ink);paint-order:stroke fill;margin:8px 0}
+#match .beans{display:flex;gap:6px;justify-content:center;margin:10px 0;flex-wrap:wrap;max-width:330px}
+#match .tip{font-size:14px;color:var(--muted);font-weight:700;margin-top:6px}
+.mini{width:16px;height:24px;border-radius:8px;border:2px solid var(--ink);position:relative;display:inline-block;flex:none}
+.mini::before{content:"";position:absolute;left:2px;right:2px;top:4px;height:6px;border-radius:50%;background:#ffe8d4}
+.mini.me{outline:3px solid var(--yellow);outline-offset:1px}
+.mini.out{opacity:.25;filter:grayscale(1)}
+
+/* ---------- round intro ---------- */
+#intro{display:flex;align-items:flex-end;justify-content:flex-start;padding:calc(16px + var(--sat)) calc(20px + var(--sar)) calc(18px + var(--sab)) calc(20px + var(--sal))}
+#intro .card{padding:16px 22px;max-width:min(520px,92vw)}
+#intro .round{font-weight:900;font-size:15px;color:var(--muted);display:flex;gap:10px;align-items:center}
+#intro .name{font-size:clamp(30px,5vmin + 12px,52px);font-weight:900;margin:2px 0;line-height:1.1}
+#intro .desc{font-weight:700;font-size:15px;line-height:1.5;margin:4px 0 8px}
+#intro .goal{display:inline-block;background:var(--ink);color:#fff;border-radius:10px;padding:5px 12px;font-weight:900}
+#intro .skip{position:absolute;right:calc(18px + var(--sar));bottom:calc(18px + var(--sab));color:#fff;font-weight:900;text-shadow:0 2px 0 var(--ink);font-size:15px;animation:blink 1.2s infinite}
+@keyframes blink{50%{opacity:.4}}
+.progress{display:flex;gap:6px;align-items:center}
+.progress i{width:26px;height:8px;border-radius:4px;background:rgba(43,45,92,.2);display:block}
+.progress i.done{background:var(--mint)}
+.progress i.now{background:var(--pink)}
+
+/* ---------- countdown / stamps ---------- */
+#big{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:20}
+#big .t{font-family:var(--f-zh);font-weight:900;font-size:clamp(56px,14vmin,150px);color:#fff;-webkit-text-stroke:10px var(--ink);paint-order:stroke fill;text-shadow:0 10px 0 var(--ink);white-space:nowrap}
+#big .t.en{font-family:var(--f-en)}
+#big .t.go{color:var(--yellow)}
+#big .t.good{color:var(--mint)}
+#big .t.bad{color:var(--red)}
+#big .t.gold{color:var(--yellow)}
+#big .t.anim{animation:stamp .9s cubic-bezier(.2,1.5,.4,1) both}
+@keyframes stamp{0%{transform:scale(2.6) rotate(-8deg);opacity:0}35%{transform:scale(.92) rotate(-3deg);opacity:1}55%{transform:scale(1.05) rotate(-3deg)}100%{transform:scale(1) rotate(-3deg)}}
+#big .t.count{animation:count .9s ease-out both}
+@keyframes count{0%{transform:scale(.3);opacity:0}25%{transform:scale(1.15);opacity:1}70%{transform:scale(1);opacity:1}100%{transform:scale(.9);opacity:0}}
+#big .sub{position:absolute;top:calc(50% + clamp(50px,9vmin,100px));font-weight:900;color:#fff;font-size:clamp(16px,2.6vmin + 6px,26px);text-shadow:0 3px 0 var(--ink);text-align:center;width:100%}
+
+/* ---------- HUD ---------- */
+#hud{position:absolute;inset:0;pointer-events:none}
+#hud .tl{position:absolute;left:calc(12px + var(--sal));top:calc(10px + var(--sat));display:flex;flex-direction:column;gap:6px;align-items:flex-start}
+#hud .tc{position:absolute;left:50%;top:calc(10px + var(--sat));transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:6px}
+#hud .tr{position:absolute;right:calc(12px + var(--sar));top:calc(10px + var(--sat));display:flex;gap:8px;pointer-events:auto}
+.pill{background:#fff;border:3px solid var(--ink);border-radius:999px;padding:4px 14px;font-weight:900;font-size:clamp(14px,1.6vmin + 8px,19px);box-shadow:0 3px 0 var(--ink);white-space:nowrap;display:flex;align-items:center;gap:8px}
+.pill .n{font-family:var(--f-en);font-size:1.15em}
+.pill.dark{background:var(--ink);color:#fff;box-shadow:0 3px 0 #0e0f2a}
+.pill.hot{background:var(--yellow)}
+.pill.warn{background:var(--red);color:#fff}
+#hudFruit{display:flex;align-items:center;gap:8px;background:#fff;border:3px solid var(--ink);border-radius:18px;padding:4px 12px 4px 6px;box-shadow:0 3px 0 var(--ink);font-weight:900}
+#hudFruit img{width:46px;height:46px}
+#hudFruit .bar{width:90px;height:10px;border-radius:5px;background:#e7e4fb;overflow:hidden;border:2px solid var(--ink)}
+#hudFruit .bar i{display:block;height:100%;background:var(--pink);width:100%;transform-origin:left}
+#hudMsg{position:absolute;left:50%;top:calc(var(--sat) + 22%);transform:translateX(-50%);font-weight:900;color:#fff;font-size:clamp(16px,2.4vmin + 8px,24px);text-shadow:0 3px 0 var(--ink),0 0 12px rgba(43,45,92,.5);text-align:center;white-space:nowrap;transition:opacity .3s}
+#feed{position:absolute;left:calc(12px + var(--sal));top:calc(var(--sat) + 96px);display:flex;flex-direction:column;gap:4px;align-items:flex-start}
+#feed div{background:rgba(43,45,92,.72);color:#fff;font-weight:700;font-size:13px;border-radius:8px;padding:3px 9px;animation:slideup .3s both;transition:opacity .4s}
+#spec{position:absolute;left:50%;bottom:calc(16px + var(--sab));transform:translateX(-50%);display:flex;align-items:center;gap:10px;pointer-events:auto}
+#fps{position:absolute;left:calc(8px + var(--sal));bottom:calc(6px + var(--sab));font:12px/1 monospace;color:#fff;text-shadow:0 1px 0 #000;pointer-events:none}
+
+/* touch controls */
+#touch{position:absolute;inset:0;pointer-events:none}
+#touch .btnc{position:absolute;border-radius:50%;border:4px solid var(--ink);pointer-events:auto;touch-action:none;display:flex;align-items:center;justify-content:center;
+  box-shadow:0 6px 0 var(--ink);transition:transform .06s,box-shadow .06s;background:var(--yellow)}
+#touch .btnc svg{width:46%;height:46%}
+#touch .btnc.down{transform:translateY(4px) scale(.96);box-shadow:0 2px 0 var(--ink)}
+#btnJump{width:clamp(76px,15vmin,104px);height:clamp(76px,15vmin,104px);right:calc(22px + var(--sar));bottom:calc(26px + var(--sab))}
+#btnDive{width:clamp(60px,11.5vmin,82px);height:clamp(60px,11.5vmin,82px);right:calc(22px + var(--sar) + clamp(76px,15vmin,104px) + 14px);bottom:calc(20px + var(--sab));background:var(--cyan)!important}
+#touch .lbl{position:absolute;bottom:-22px;left:50%;transform:translateX(-50%);font-weight:900;font-size:12px;color:#fff;text-shadow:0 2px 0 var(--ink);white-space:nowrap}
+#stick{position:absolute;left:0;top:0;width:0;height:0;pointer-events:none;opacity:0;transition:opacity .15s}
+#stick.active{opacity:1}
+#stick .base{position:absolute;width:130px;height:130px;margin:-65px 0 0 -65px;border-radius:50%;background:rgba(255,255,255,.22);border:3px solid rgba(255,255,255,.75);box-shadow:0 0 0 3px rgba(43,45,92,.25)}
+#knob{position:absolute;width:60px;height:60px;margin:-30px 0 0 -30px;border-radius:50%;background:#fff;border:4px solid var(--ink);box-shadow:0 4px 0 rgba(43,45,92,.5)}
+#stickHint{position:absolute;left:calc(46px + var(--sal));bottom:calc(46px + var(--sab));width:110px;height:110px;border-radius:50%;border:3px dashed rgba(255,255,255,.65);pointer-events:none;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;font-size:13px;text-shadow:0 2px 0 var(--ink);text-align:center;transition:opacity .3s}
+
+/* results */
+#results .card,#elim .card,#victory .card{padding:22px 24px;text-align:center;width:min(560px,94vw);max-height:100%;overflow:auto}
+.res-title{font-size:clamp(30px,5vmin + 12px,48px);font-weight:900;margin:0;line-height:1.15}
+.res-sub{font-weight:700;margin:6px 0 12px;font-size:16px}
+.crowd{display:flex;flex-wrap:wrap;gap:5px;justify-content:center;margin:12px auto;max-width:440px}
+.rewards{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:12px 0}
+.actions{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:14px}
+.crownBig{width:120px;height:96px;margin:0 auto;animation:float 1.6s ease-in-out infinite alternate}
+@keyframes float{to{transform:translateY(-8px) rotate(3deg)}}
+
+/* toast */
+#toasts{position:absolute;left:50%;top:calc(12px + var(--sat));transform:translateX(-50%);display:flex;flex-direction:column;gap:8px;align-items:center;z-index:60;pointer-events:none}
+#toasts div{background:var(--ink);color:#fff;font-weight:900;border-radius:999px;padding:7px 16px;box-shadow:0 4px 0 #0e0f2a;animation:slideup .3s both;transition:opacity .4s,transform .4s;font-size:15px;white-space:nowrap}
+
+#rotateTip{position:absolute;left:50%;bottom:calc(16px + var(--sab));transform:translateX(-50%);z-index:30}
+.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="touchLayer"></div>
+
+  <div id="hud" hidden>
+    <div class="tl"><div class="pill dark" id="hudRound">第 1 回合</div></div>
+    <div class="tc">
+      <div class="pill" id="hudMain"></div>
+      <div id="hudFruit" hidden><img alt=""><div><div id="hudFruitTxt">站到這個水果上！</div><div class="bar"><i></i></div></div></div>
+    </div>
+    <div class="tr"><button class="btn icon white" id="btnPause" aria-label="暫停"><svg viewBox="0 0 24 24"><rect x="5" y="4" width="5" height="16" rx="2" fill="currentColor"/><rect x="14" y="4" width="5" height="16" rx="2" fill="currentColor"/></svg></button></div>
+    <div id="hudMsg"></div>
+    <div id="feed"></div>
+    <div id="spec" hidden>
+      <button class="btn small white" id="specPrev" aria-label="上一位">‹</button>
+      <div class="pill dark" id="specName">觀戰中</div>
+      <button class="btn small white" id="specNext" aria-label="下一位">›</button>
+      <button class="btn small pink" id="specLeave">離開</button>
+    </div>
+  </div>
+
+  <div id="touch" hidden>
+    <div id="stickHint">按住拖曳<br>移動</div>
+    <div id="stick"><div class="base"></div><div id="knob"></div></div>
+    <button id="btnDive" class="btnc" aria-label="飛撲"><svg viewBox="0 0 24 24"><rect x="7" y="8.5" width="15" height="7" rx="3.5" fill="#2b2d5c" transform="rotate(-12 14 12)"/><circle cx="18.6" cy="10.6" r="1.3" fill="#fff"/><path d="M1.5 9h4M1 12.5h4.5M2 16h3.5" stroke="#2b2d5c" stroke-width="2" stroke-linecap="round"/></svg><span class="lbl">飛撲</span></button>
+    <button id="btnJump" class="btnc" aria-label="跳躍"><svg viewBox="0 0 24 24"><path d="M12 3l8 9h-5v8H9v-8H4z" fill="#2b2d5c"/></svg><span class="lbl">跳</span></button>
+  </div>
+
+  <div id="big"></div>
+
+  <div class="layer" id="screens">
+    <section id="title" hidden>
+      <div class="top">
+        <div>
+          <h1 id="logo"><span class="zh">豆豆大闖關</span><span class="en">BEAN RUSH!</span></h1>
+          <div class="hello" id="hello"></div>
+        </div>
+        <div class="stats">
+          <span class="chip" title="皇冠"><svg viewBox="0 0 24 24"><path d="M3 8l4 3 5-6 5 6 4-3-2 11H5z" fill="#ffd23f" stroke="#2b2d5c" stroke-width="2" stroke-linejoin="round"/></svg><span id="stCrowns">0</span></span>
+          <span class="chip" title="豆幣"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="#ffd23f" stroke="#2b2d5c" stroke-width="2"/><ellipse cx="12" cy="12" rx="3.2" ry="5" fill="#ffb000" stroke="#2b2d5c" stroke-width="1.6"/></svg><span id="stCoins">0</span></span>
+        </div>
+      </div>
+      <div class="side">
+        <button class="btn white small" id="btnHelp"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2.5"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .8-1 1.5V14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/><circle cx="12" cy="17.5" r="1.4" fill="currentColor"/></svg>玩法</button>
+        <button class="btn white small" id="btnSettings"><svg viewBox="0 0 24 24"><path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7zm8 3.5-2-.6-.6-1.5 1-1.9-1.4-1.4-1.9 1-1.5-.6L13 4h-2l-.6 2-1.5.6-1.9-1L5.6 7l1 1.9-.6 1.5L4 11v2l2 .6.6 1.5-1 1.9 1.4 1.4 1.9-1 1.5.6.6 2h2l.6-2 1.5-.6 1.9 1 1.4-1.4-1-1.9.6-1.5 2-.6z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>設定</button>
+        <button class="btn white small" id="btnFull" hidden><svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>全螢幕</button>
+      </div>
+      <div class="menu">
+        <button class="btn big pink" id="btnPlay"><svg viewBox="0 0 24 24"><path d="M7 4l13 8-13 8z" fill="currentColor"/></svg>開始闖關</button>
+        <button class="btn cyan" id="btnPractice">練習關卡</button>
+        <button class="btn" id="btnCustom">造型</button>
+      </div>
+    </section>
+
+    <section id="match" class="center" hidden>
+      <div class="panel card pop">
+        <h2>正在召集參賽者…</h2>
+        <div class="count"><span id="mCount">1</span><small style="font-size:26px">/<span id="mMax">30</span></small></div>
+        <div class="beans" id="mBeans"></div>
+        <div class="tip" id="mTip"></div>
+      </div>
+    </section>
+
+    <section id="intro" hidden>
+      <div class="panel card slideup">
+        <div class="round"><span id="iRound">第 1 回合</span><span class="progress" id="iProg"></span></div>
+        <div class="name" id="iName"></div>
+        <span class="tag" id="iTag">競速</span>
+        <div class="desc" id="iDesc"></div>
+        <div class="goal" id="iGoal"></div>
+      </div>
+      <div class="skip" id="iSkip">點一下畫面跳過</div>
+    </section>
+
+    <section id="results" class="center" hidden>
+      <div class="panel card pop">
+        <h2 class="res-title" id="rTitle"></h2>
+        <div class="res-sub" id="rSub"></div>
+        <div class="crowd" id="rCrowd"></div>
+        <div class="progress" id="rProg" style="justify-content:center"></div>
+        <div class="actions" id="rActions"></div>
+      </div>
+    </section>
+
+    <section id="elim" class="center" hidden>
+      <div class="scrim"></div>
+      <div class="panel card pop">
+        <h2 class="res-title" style="color:var(--red)">淘汰了…</h2>
+        <div class="res-sub" id="eSub"></div>
+        <div class="rewards" id="eRewards"></div>
+        <div class="actions">
+          <button class="btn cyan" id="eWatch">繼續觀戰</button>
+          <button class="btn pink" id="eLeave">回到大廳</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="victory" class="center" hidden>
+      <div class="panel card pop">
+        <svg class="crownBig" viewBox="0 0 120 96"><path d="M10 34l26 20 24-40 24 40 26-20-10 54H20z" fill="#ffd23f" stroke="#2b2d5c" stroke-width="6" stroke-linejoin="round"/><circle cx="60" cy="62" r="9" fill="#ff4f64" stroke="#2b2d5c" stroke-width="4"/><circle cx="10" cy="30" r="7" fill="#fff" stroke="#2b2d5c" stroke-width="4"/><circle cx="110" cy="30" r="7" fill="#fff" stroke="#2b2d5c" stroke-width="4"/><circle cx="60" cy="12" r="7" fill="#fff" stroke="#2b2d5c" stroke-width="4"/></svg>
+        <h2 class="res-title">冠軍是你！</h2>
+        <div class="res-sub" id="vSub"></div>
+        <div class="rewards" id="vRewards"></div>
+        <div class="actions"><button class="btn pink big" id="vDone">回到大廳</button></div>
+      </div>
+    </section>
+
+    <section id="showEnd" class="center" hidden>
+      <div class="panel card pop" style="padding:22px 24px;text-align:center;width:min(520px,94vw)">
+        <h2 class="res-title" id="sTitle">本場結束</h2>
+        <div class="res-sub" id="sSub"></div>
+        <div class="actions"><button class="btn pink" id="sDone">回到大廳</button></div>
+      </div>
+    </section>
+
+    <section id="pause" class="center" hidden>
+      <div class="scrim"></div>
+      <div class="panel dlg pop" style="width:min(360px,100%)">
+        <header><h2>暫停</h2></header>
+        <div class="body" style="display:flex;flex-direction:column;gap:12px;align-items:stretch">
+          <button class="btn pink" id="pResume">繼續遊戲</button>
+          <button class="btn white" id="pSettings">設定</button>
+          <button class="btn white" id="pHelp">玩法說明</button>
+          <button class="btn" id="pQuit">離開這場比賽</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="confirm" class="center" hidden>
+      <div class="scrim"></div>
+      <div class="panel dlg pop" style="width:min(380px,100%)">
+        <header><h2 id="cTitle">確定嗎？</h2></header>
+        <div class="body"><p id="cText" style="margin:0;font-weight:700;line-height:1.6"></p></div>
+        <footer><button class="btn white" id="cNo">取消</button><button class="btn pink" id="cYes">確定</button></footer>
+      </div>
+    </section>
+
+    <section id="practice" class="center" hidden>
+      <div class="scrim"></div>
+      <div class="panel dlg pop" style="width:min(720px,100%)">
+        <header><h2>練習關卡</h2><button class="btn small white" data-close>關閉</button></header>
+        <div class="body">
+          <p class="note" style="margin-top:0">每一關都可以單獨練習，跟電腦豆豆一起玩，不會影響戰績。</p>
+          <div class="levels" id="lvlList"></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="custom" hidden>
+      <button class="btn small white back" data-close>‹ 返回</button>
+      <span class="chip coinchip"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="#ffd23f" stroke="#2b2d5c" stroke-width="2"/><ellipse cx="12" cy="12" rx="3.2" ry="5" fill="#ffb000" stroke="#2b2d5c" stroke-width="1.6"/></svg><span id="cuCoins">0</span></span>
+      <div class="panel dlg slideup">
+        <header><h2>我的豆豆</h2><div class="tabs" id="cuTabs"></div></header>
+        <div class="body">
+          <div class="nameRow"><span style="font-weight:900">名字</span><input id="cuName" maxlength="8" placeholder="輸入暱稱" autocomplete="off" enterkeyhint="done"></div>
+          <div class="grid" id="cuGrid"></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="settings" class="center" hidden>
+      <div class="scrim"></div>
+      <div class="panel dlg pop">
+        <header><h2>設定</h2><button class="btn small white" data-close>完成</button></header>
+        <div class="body">
+          <div class="row"><label for="sMusic">音樂</label><input type="range" id="sMusic" min="0" max="1" step="0.05"></div>
+          <div class="row"><label for="sSfx">音效</label><input type="range" id="sSfx" min="0" max="1" step="0.05"></div>
+          <div class="row"><label>畫質</label><div class="seg" id="sQuality"><button data-v="auto">自動</button><button data-v="low">省電</button><button data-v="medium">標準</button><button data-v="high">高</button></div></div>
+          <div class="row"><label for="sSens">鏡頭靈敏度</label><input type="range" id="sSens" min="0.4" max="2" step="0.1"></div>
+          <div class="row"><label>鏡頭上下反轉</label><button class="toggle" id="sInvert" aria-label="鏡頭上下反轉"></button></div>
+          <div class="row"><label>手機震動回饋</label><button class="toggle" id="sVibrate" aria-label="震動"></button></div>
+          <div class="row"><label>顯示每秒格數（FPS）</label><button class="toggle" id="sFps" aria-label="顯示 FPS"></button></div>
+          <div class="row"><label>清除所有進度</label><button class="btn small white" id="sReset">清除</button></div>
+          <p class="note">進度只存在這台裝置的瀏覽器裡。無痕模式或清除網站資料後，進度會消失。</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="help" class="center" hidden>
+      <div class="scrim"></div>
+      <div class="panel dlg pop help">
+        <header><h2>怎麼玩</h2><button class="btn small white" data-close>知道了</button></header>
+        <div class="body">
+          <p style="margin-top:0;font-weight:700;line-height:1.6">30 位豆豆一起闖關，每回合淘汰一部分人。撐過四個回合、在決賽站到最後，就能拿到皇冠！</p>
+          <h3>手機／平板</h3>
+          <table>
+            <tr><td>移動</td><td>按住畫面左半邊拖曳（浮動搖桿）</td></tr>
+            <tr><td>轉鏡頭</td><td>在畫面右半邊滑動</td></tr>
+            <tr><td>跳 / 飛撲</td><td>右下角的黃色、藍色按鈕</td></tr>
+          </table>
+          <h3>電腦</h3>
+          <table>
+            <tr><td>移動</td><td><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> 或方向鍵</td></tr>
+            <tr><td>跳</td><td><kbd>空白鍵</kbd></td></tr>
+            <tr><td>飛撲</td><td><kbd>Shift</kbd> 或 <kbd>E</kbd></td></tr>
+            <tr><td>轉鏡頭</td><td>按住滑鼠拖曳，或 <kbd>Q</kbd> <kbd>R</kbd></td></tr>
+            <tr><td>暫停</td><td><kbd>Esc</kbd> 或 <kbd>P</kbd></td></tr>
+          </table>
+          <h3>手把</h3>
+          <table><tr><td>操作</td><td>左搖桿移動、右搖桿轉鏡頭、A 跳、B／X 飛撲、Start 暫停</td></tr></table>
+          <h3>小技巧</h3>
+          <table>
+            <tr><td>飛撲</td><td>跳起來再飛撲可以飛更遠，衝線前飛撲也很帥。</td></tr>
+            <tr><td>被撞倒</td><td>被障礙物打到會暈一下，起身後再繼續。</td></tr>
+            <tr><td>掉下去</td><td>競速關會回到上一個存檔點；生存關和決賽掉下去就淘汰。</td></tr>
+          </table>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div id="toasts"></div>
+  <div id="fps" hidden></div>
+
+  <div id="loading"><div class="bean-ico"></div><div class="t">豆豆們正在暖身…</div></div>
+  <noscript><div style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#fff;font-size:20px">這個遊戲需要啟用 JavaScript。</div></noscript>
+</div>
+<script>/*__GAME__*/</script>
+</body>
+</html>

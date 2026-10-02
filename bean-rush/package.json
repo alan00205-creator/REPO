@@ -1,0 +1,15 @@
+{
+  "name": "bean-rush",
+  "private": true,
+  "version": "1.0.0",
+  "description": "豆豆大闖關：致敬糖豆人的瀏覽器 3D 闖關遊戲",
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs",
+    "sim": "node tools/sim.mjs"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2",
+    "three": "0.186.1"
+  }
+}
