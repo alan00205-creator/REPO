@@ -23,6 +23,7 @@ const _s = new Vector3();
 const _ax = new Vector3();
 const _up = new Vector3();
 const _c = new Color();
+const _c1 = new Color();
 const Y = new Vector3(0, 1, 0);
 const X = new Vector3(1, 0, 0);
 
@@ -259,7 +260,7 @@ export class BeanView {
       _c.set(colorOf(look.color));
       if (this.aC1.getX(i) !== _c.r || this.aC1.getY(i) !== _c.g || this.aC1.getZ(i) !== _c.b) looksDirty = true;
       this.aC1.setXYZ(i, _c.r, _c.g, _c.b);
-      const c1 = _c.clone();
+      const c1 = _c1.copy(_c);
       _c.set(colorOf(look.color2 || 'white'));
       this.aC2.setXYZ(i, _c.r, _c.g, _c.b);
       this.aPat.setX(i, look.pattern || 0);
@@ -411,7 +412,7 @@ export class BeanView {
 
       if (b === opts.marker) {
         playerShown = true;
-        this.marker.position.set(px, py + BEAN_H + 0.95 + Math.sin(time * 4) * 0.08 + (hat ? 0.35 : 0), pz);
+        this.marker.position.set(px, py + BEAN_H + 0.62 + Math.sin(time * 4) * 0.06 + (hat ? 0.3 : 0), pz);
         this.marker.rotation.y = time * 2;
       }
       counts.body++;

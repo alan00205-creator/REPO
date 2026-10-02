@@ -30,7 +30,7 @@ export default {
   build({ kit: k, sim, rng }) {
     // start
     k.box(0, -0.6, -5, 26, 1.2, 14, { look: LK.start });
-    arch(k, 0, 0, 1.5, 24, { c: '#b07a4f' });
+    arch(k, 0, 0, -10.6, 24, { c: '#b07a4f' });
     // slope 1
     ramp(k, 0, -14.6, 0, -44, 5.2, W, 1.2, LK.tea);
     // plateau 1

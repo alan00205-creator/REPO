@@ -269,9 +269,21 @@ export class Gfx {
     const gone = new MeshLambertMaterial({ color: 0x6a5acd });
     const side = this.material({ t: 'hstripe', c: '#ffffff', c2: '#ff8fcf' });
     const bottom = this.material({ t: 'plain', c: '#8f7fe0' });
+    // two draw groups per tile: the fruit face, and everything else
     const geo = new BoxGeometry(size, 1, size);
+    {
+      const idx = Array.from(geo.getIndex().array);
+      const faces = geo.groups.map((g) => idx.slice(g.start, g.start + g.count));
+      const top = faces[2];
+      const rest = faces.filter((_, i) => i !== 2).flat();
+      geo.setIndex([...top, ...rest]);
+      geo.clearGroups();
+      geo.addGroup(0, top.length, 0);
+      geo.addGroup(top.length, rest.length, 1);
+    }
+    void bottom;
     for (const tl of L.tiles) {
-      const mats = [side, side, blank, bottom, side, side];
+      const mats = [blank, side];
       const mesh = new Mesh(geo, mats);
       tl.mesh = mesh;
       this.addDynamic(mesh, tl.body);
@@ -292,7 +304,7 @@ export class Gfx {
       const st = L.st;
       for (const tl of L.tiles) {
         const m = tl.mesh.material;
-        m[2] = tl.face >= 0 ? fruitMats[tl.face] : tl.face === -2 ? gone : blank;
+        m[0] = tl.face >= 0 ? fruitMats[tl.face] : tl.face === -2 ? gone : blank;
       }
       const show = st.stage === 'hide' || st.stage === 'drop' || st.stage === 'rise';
       panel.material = show && st.target >= 0 ? fruitMats[st.target] : blank;

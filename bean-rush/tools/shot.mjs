@@ -22,7 +22,7 @@ const page = await ctx.newPage();
 const errors = [];
 page.on('console', (m) => { if (m.type() === 'error' || m.type() === 'warning') errors.push(m.type() + ': ' + m.text()); });
 page.on('pageerror', (e) => errors.push('pageerror: ' + e.message));
-await page.goto(url + (process.argv.includes('--seed') ? '?seed=1' : ''));
+await page.goto(url + (scenario === 'auto' ? '?auto=1&speed=' + (process.argv.find((a) => a.startsWith('--speed='))?.slice(8) || '4') : ''));
 await page.waitForTimeout(2500);
 const tag = (mobile ? (portrait ? 'mp-' : 'ml-') : 'd-') + scenario;
 const shot = async (name) => { await page.screenshot({ path: join(out, `${tag}-${name}.png`) }); };
@@ -123,6 +123,57 @@ if (scenario === 'lobby') {
   await until(() => window.__game.state === 'end');
   await page.waitForTimeout(1200);
   await shot('3-victory');
+} else if (scenario === 'auto') {
+  // a bot drives the player's bean through whole shows; we click through every screen
+  const shows = +(process.argv.find((a) => a.startsWith('--shows='))?.slice(8) || 1);
+  for (let k = 0; k < shows; k++) {
+    await page.evaluate(() => window.__game.startShow());
+    const t0 = Date.now();
+    let last = '';
+    while (Date.now() - t0 < 900000) {
+      const st = await page.evaluate(() => {
+        const g = window.__game;
+        const vis = (id) => !document.getElementById(id).hidden;
+        const s = g.show;
+        return { state: g.state, sub: g.sub, round: s ? s.idx : -1, level: g.def ? g.def.id : '', alive: s ? s.alive.length : 0, out: s ? s.playerOut : false,
+          elim: vis('elim'), results: vis('results'), victory: vis('victory'), end: vis('showEnd'), t: g.sim ? g.sim.t.toFixed(0) : 0, n: g.sim ? g.sim.aliveCount : 0 };
+      });
+      const key = `${st.round}:${st.level}:${st.sub}:${st.elim}:${st.results}`;
+      if (key !== last) { console.log(JSON.stringify(st)); last = key; }
+      if (st.state === 'end') { await shot(`show${k}-end`); break; }
+      if (st.sub === 'intro') await page.evaluate(() => window.__game.skipIntro());
+      if (st.elim) await page.click('#eWatch');
+      if (st.results && st.state === 'round') await page.evaluate(() => window.__game.nextRound());
+      await page.waitForTimeout(400);
+    }
+    const sv = await page.evaluate(() => { const s = window.__game.save; return { coins: s.coins, crowns: s.crowns, shows: s.shows, best: s.bestRound, finals: s.finals }; });
+    console.log('save after show', k, JSON.stringify(sv));
+    await page.evaluate(() => window.__game.enterLobby());
+    await page.waitForTimeout(500);
+  }
+} else if (scenario === 'menus') {
+  const until = (fn, t = 60000) => page.waitForFunction(fn, null, { timeout: t, polling: 200 });
+  await page.evaluate(() => window.__game.startPractice('boba'));
+  await until(() => window.__game.sub === 'intro');
+  await page.evaluate(() => window.__game.skipIntro());
+  await until(() => window.__game.sub === 'play');
+  await page.click('#btnPause');
+  await page.waitForTimeout(500);
+  await shot('pause');
+  await page.click('#pResume');
+  await page.evaluate(() => { const g = window.__game, s = g.sim; s.finishBean(s.player); s.emit('finish', s.player, 1); g.handleEvents(); });
+  await until(() => window.__game.sub === 'results');
+  await page.waitForTimeout(500);
+  await shot('practice-results');
+  await page.evaluate(() => window.__game.enterLobby());
+  await page.waitForTimeout(500);
+  await page.click('#btnPractice');
+  await page.waitForTimeout(500);
+  await shot('practice-list');
+  await page.click('#practice [data-close]');
+  await page.click('#btnHelp');
+  await page.waitForTimeout(400);
+  await shot('help');
 } else if (scenario === 'show') {
   await page.click('#btnPlay');
   await page.waitForTimeout(1500);

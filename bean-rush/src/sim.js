@@ -142,7 +142,10 @@ export class Sim {
       if (b.pos.y < L.killY) {
         b.stats.falls++;
         this.emit('splash', b);
-        if ((this.type === 'race' || this.type === 'lobby') && !b.finished) {
+        if (this.ended && this.type !== 'race') {
+          // after the whistle nobody else is eliminated: quietly put them back
+          b.respawnT = 0.8;
+        } else if ((this.type === 'race' || this.type === 'lobby') && !b.finished) {
           b.respawnT = 1.1;
         } else if (!b.finished) {
           this.eliminate(b, 'fall');

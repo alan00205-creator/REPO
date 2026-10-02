@@ -14,7 +14,7 @@ export default {
   build({ kit: k, sim, rng }) {
     // --- start plaza
     k.box(0, -0.6, -5, 26, 1.2, 14, { look: LK.start });
-    arch(k, 0, 0, 1.5, 24, { c: '#ff5fa2', banner: 'checker' });
+    arch(k, 0, 0, -11.4, 21.6, { c: '#ff5fa2', banner: 'checker' });
 
     // --- sweeper field
     k.box(0, -0.6, -33, 20, 1.2, 42, { look: LK.floorLilac });

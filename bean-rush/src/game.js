@@ -2,6 +2,7 @@
 
 import { Vector3 } from 'three';
 import { Sim, STEP } from './sim.js';
+import { makeBrain } from './ai.js';
 import { LEVELS } from './levels/index.js';
 import lobbyDef from './levels/lobby.js';
 import { makeRng, clamp, formatTime, damp, lerpAngle } from './util.js';
@@ -48,6 +49,10 @@ export class Game {
     this.fruitImgs = [];
     this.lastHud = {};
     this.tutorialT = 0;
+    // developer switches: ?auto=1 lets a bot drive your bean, ?speed=N fast-forwards
+    const q = new URLSearchParams(location.search);
+    this.auto = q.get('auto') === '1';
+    this.speed = clamp(parseFloat(q.get('speed')) || 1, 0.25, 8);
     this.bindUI();
     input.onMode = () => this.refreshTouch();
   }
@@ -219,6 +224,7 @@ export class Game {
     this.sub = 'intro';
     this.paused = false;
     const sim = this.makeSim(def, contestants, o);
+    if (this.auto && sim.player) sim.player.brain = makeBrain(sim, sim.player, 0.95);
     this.def = def;
     this.playerOutShown = false;
     this.finishedShown = false;
@@ -682,7 +688,7 @@ export class Game {
 
     if (sim && !this.paused) {
       const me = sim.player;
-      if (me && this.state === 'round' && !this.spectate && (this.sub === 'count' || this.sub === 'play' || this.sub === 'over')) {
+      if (me && !this.auto && this.state === 'round' && !this.spectate && (this.sub === 'count' || this.sub === 'play' || this.sub === 'over')) {
         rig.toWorld(inp.sx, inp.sy, tmpV);
         me.mx = tmpV.x;
         me.mz = tmpV.z;
@@ -691,15 +697,17 @@ export class Game {
         if ((inp.sx || inp.sy) && this.tutorialT > 0) { $('stickHint').style.opacity = '0'; }
       }
       if (this.state === 'lobby' || this.state === 'custom' || this.state === 'match' || this.state === 'end') this.lobbyPlayer(dt);
-      this.acc += dt * sim.timeScale;
+      const speed = this.state === 'round' ? this.speed : 1;
+      this.acc += dt * sim.timeScale * speed;
       let n = 0;
-      while (this.acc >= STEP && n < 6) {
+      const maxSteps = 6 * Math.ceil(speed);
+      while (this.acc >= STEP && n < maxSteps) {
         sim.step(STEP);
         this.acc -= STEP;
         n++;
         this.handleEvents();
       }
-      if (n >= 6) this.acc = 0;
+      if (n >= maxSteps) this.acc = 0;
     }
 
     // round sub-phases
@@ -807,6 +815,33 @@ export class Game {
       this.sunkFocus.y = Math.max(this.sunkFocus.y, (L.killY ?? -8) + 3);
     } else this.sunkFocus = null;
     rig.update(dt, { focus: sunk ? this.sunkFocus : focusBean.pos, hintYaw: hint, moving });
+    this.cameraCollide(dt);
+  }
+
+  // Pull the camera in front of walls between it and the bean (e.g. running through doors).
+  cameraCollide(dt) {
+    const cam = this.view.camera;
+    const t = this.view.rig.look;
+    const world = this.sim.world;
+    const dx = cam.position.x - t.x, dy = cam.position.y - t.y, dz = cam.position.z - t.z;
+    const dist = Math.hypot(dx, dy, dz);
+    if (dist < 0.1) return;
+    const ux = dx / dist, uy = dy / dist, uz = dz / dist;
+    let free = dist;
+    for (let s = 0.9; s < dist; s += 0.35) {
+      const px = t.x + ux * s, py = t.y + uy * s, pz = t.z + uz * s;
+      const cands = world.gather(px, py, pz, 0.4);
+      let hit = false;
+      for (const sh of cands) {
+        const b = sh.body;
+        if (sh.type === 6 || b.hazard || !b.solid || b.data.nocam) continue;
+        if (world.sphereVs([sh], px, py, pz, 0.32) > 0) { hit = true; break; }
+      }
+      if (hit) { free = Math.max(1.4, s - 0.35); break; }
+    }
+    // snap in quickly, ease back out
+    this.camFree = this.camFree === undefined ? free : free < this.camFree ? free : damp(this.camFree, free, 3, dt);
+    if (this.camFree < dist - 0.01) cam.position.set(t.x + ux * this.camFree, t.y + uy * this.camFree, t.z + uz * this.camFree);
   }
 
   renderHud(force) {
@@ -816,15 +851,19 @@ export class Game {
     const me = sim.player;
     let main = '';
     const alive = sim.aliveCount;
+    let warn = false;
     if (sim.type === 'race') {
       main = this.mode === 'practice' ? `練習中 <span class="n">${formatTime(sim.t)}</span>` : `晉級 <span class="n">${sim.qualified.length} / ${sim.quota}</span>`;
+      warn = this.mode === 'show' && me && !me.finished && !me.out && sim.quota - sim.qualified.length <= 3;
     } else if (sim.type === 'survival') {
       const left = sim.duration ? sim.duration - sim.t : 0;
+      warn = sim.duration && sim.phase === 'play' && left < 10;
       main = `存活 <span class="n">${alive}</span>` + (s ? `<span style="opacity:.6">／目標 ${sim.targetAlive}</span>` : '') + (sim.duration ? `　⏱ <span class="n">${formatTime(sim.phase === 'countdown' ? sim.duration : left)}</span>` : '');
     } else {
       main = `剩下 <span class="n">${alive}</span> 人`;
     }
     UI.setHTML('hudMain', main);
+    $('hudMain').classList.toggle('warn', !!warn);
     UI.setText('hudRound', s ? (s.idx === 3 ? '決賽・' + this.def.name : `第 ${s.idx + 1} 回合・${this.def.name}`) : '練習・' + this.def.name);
 
     // fruit panel
@@ -853,6 +892,7 @@ export class Game {
       msg = this.input.mode === 'touch' ? '左邊拖曳移動・右邊滑動轉鏡頭' : this.input.mode === 'pad' ? '左搖桿移動・A 跳・B 飛撲' : 'WASD 移動・空白鍵跳・Shift 飛撲・拖曳滑鼠轉鏡頭';
       if (this.tutorialT <= 0) $('stickHint').style.opacity = '0';
     } else if (me && me.finished && this.mode === 'show' && !this.spectate) msg = '你晉級了！等其他豆豆過線…';
+    else if (warn && sim.type === 'race') msg = `只剩 ${sim.quota - sim.qualified.length} 個名額！`;
     else if (this.spectate) msg = '';
     UI.setText('hudMsg', msg);
     $('fps').hidden = !this.save.settings.fps;

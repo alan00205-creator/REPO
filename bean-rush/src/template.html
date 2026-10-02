@@ -10,6 +10,8 @@
 <meta name="description" content="豆豆大闖關：致敬糖豆人的瀏覽器 3D 派對闖關遊戲，手機電腦都能玩。">
 <title>豆豆大闖關</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect x='14' y='4' width='36' height='56' rx='18' fill='%23ff86c8' stroke='%232b2d5c' stroke-width='4'/%3E%3Cellipse cx='32' cy='22' rx='13' ry='8' fill='%23ffe8d4'/%3E%3Ccircle cx='27' cy='22' r='3.5' fill='%232b2d5c'/%3E%3Ccircle cx='37' cy='22' r='3.5' fill='%232b2d5c'/%3E%3C/svg%3E">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Huninn&family=Titan+One&display=swap" rel="stylesheet">
@@ -189,6 +191,7 @@ kbd{display:inline-block;border:2px solid var(--ink);border-bottom-width:4px;bor
 #hud{position:absolute;inset:0;pointer-events:none}
 #hud .tl{position:absolute;left:calc(12px + var(--sal));top:calc(10px + var(--sat));display:flex;flex-direction:column;gap:6px;align-items:flex-start}
 #hud .tc{position:absolute;left:50%;top:calc(10px + var(--sat));transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:6px}
+@media (max-width:640px){#hud .tl{top:calc(62px + var(--sat))}#feed{top:calc(var(--sat) + 120px)}}
 #hud .tr{position:absolute;right:calc(12px + var(--sar));top:calc(10px + var(--sat));display:flex;gap:8px;pointer-events:auto}
 .pill{background:#fff;border:3px solid var(--ink);border-radius:999px;padding:4px 14px;font-weight:900;font-size:clamp(14px,1.6vmin + 8px,19px);box-shadow:0 3px 0 var(--ink);white-space:nowrap;display:flex;align-items:center;gap:8px}
 .pill .n{font-family:var(--f-en);font-size:1.15em}
