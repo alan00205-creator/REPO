@@ -3029,7 +3029,8 @@ function drawHero(c, x, y, o) {
   c.save(); c.globalAlpha = o.alpha == null ? 1 : o.alpha;
   if (o.clipTop != null && y + (sk.reach || sk.viewTop || -30) < o.clipTop) { c.beginPath(); c.rect(x - 64, o.clipTop, 128, 128); c.clip(); }
   // scarf (world-space points)
-  const HF = o.hero || Hero, s = HF.scarf; c.strokeStyle = o.flash ? '#ffffff' : sk.scarf || '#E5484D'; c.lineWidth = 3; c.lineCap = 'round'; c.beginPath(); c.moveTo(s[0].x, s[0].y - o.camY); for (let i = 1; i < s.length; i++) c.lineTo(s[i].x, s[i].y - o.camY); c.stroke();
+  const HF = o.hero || Hero, s = HF.scarf;
+  if (sk.scarf !== false) { c.strokeStyle = o.flash ? '#ffffff' : sk.scarf || '#E5484D'; c.lineWidth = 3; c.lineCap = 'round'; c.beginPath(); c.moveTo(s[0].x, s[0].y - o.camY); for (let i = 1; i < s.length; i++) c.lineTo(s[i].x, s[i].y - o.camY); c.stroke(); }
   c.translate(x, y);
   if (o.scale && o.scale !== 1) c.scale(o.scale, o.scale);
   if (o.flipA) { c.translate(0, -14); c.rotate(o.flipA * f); c.translate(0, 14); }
@@ -3037,6 +3038,13 @@ function drawHero(c, x, y, o) {
   const white = o.flash;
   const C = (col) => white ? '#ffffff' : col;
   const st = o.state, t = o.t, tone = sk.tone || '#F2C9A0', boots = sk.boots || '#3A2618';
+  // full-body skins (creatures) draw everything themselves; the engine keeps the transforms, hurt flash and lamp glow
+  if (sk.draw) {
+    sk.draw(c, C, C(o.lampOn === false ? '#5A5550' : sk.lamp), o);
+    const la = sk.lampAt || LAMP_AT;
+    if (!o.helmetOff && o.lampOn !== false && o.glowR && !white) { const g = c.globalCompositeOperation; c.globalCompositeOperation = 'lighter'; glow(c, la[0], la[1] - 20, o.glowR, o.glowCol, o.glowA); c.globalCompositeOperation = g; }
+    c.restore(); return;
+  }
   if (sk.back) sk.back(c, C, o);
   // legs/boots
   let lA = 0, rA = 0;
