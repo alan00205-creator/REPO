@@ -1921,6 +1921,761 @@ const SKINS = [
       c.beginPath(); c.moveTo(0, y0 - 3.2); c.quadraticCurveTo(2, y0 - .4, 0, y0 + 1); c.quadraticCurveTo(-2, y0 - .4, 0, y0 - 3.2); c.fillStyle = L; c.fill(); c.strokeStyle = C('#E07A2E'); c.lineWidth = .8; c.stroke();
     },
   },
+  // ---------- B5 小學生: soft round yellow sun hat (小黃帽) with an all-round brim, white shirt + navy shorts,
+  // square red 書包 on the back, a little clip-on flashlight on the shoulder strap (the lamp) ----------
+  {
+    id: 'pupil', name: '小學生', unlock: 5, blurb: '路隊長說要排好隊！',
+    overalls: '#F6F5EF', helmet: '#FFD21F', lamp: '#FFF6C8', scarf: '#2B3A67', boots: '#2A2A30',
+    glow: { r: 9, col: '#FFF6C8', a: .5 }, lampAt: [5.4, 7.4],
+    back(c, C, o) {
+      const st = o.state, t = o.t || 0, K = '#14110F';
+      const lean = st === 'run' ? .14 : st === 'teeter' ? (o.drop || 1) * (.1 + .07 * Math.sin(t * TAU * 2 / 60)) : 0;
+      const bob = st === 'run' ? Math.abs(Math.sin(t * TAU * 9 / 60)) * -1 : st === 'fall' ? -1.4 : 0;
+      c.save(); c.rotate(lean); c.translate(0, bob); c.lineJoin = 'round';
+      // square school bag
+      rr(c, -13.4, -15.6, 9, 11.6, 2); c.fillStyle = C('#D9423A'); c.fill(); c.strokeStyle = K; c.lineWidth = 1.1; c.stroke();
+      // flap
+      c.beginPath(); c.moveTo(-13.4, -11); c.lineTo(-13.4, -13.6); c.quadraticCurveTo(-13.4, -15.6, -11.4, -15.6); c.lineTo(-6.4, -15.6);
+      c.quadraticCurveTo(-4.4, -15.6, -4.4, -13.6); c.lineTo(-4.4, -9.4); c.quadraticCurveTo(-8.6, -8.4, -13.4, -9.4); c.closePath();
+      c.fillStyle = C('#B0302B'); c.fill(); c.strokeStyle = K; c.lineWidth = .9; c.stroke();
+      // buckle + reflective strip
+      rr(c, -10, -10.4, 2.2, 2, .5); c.fillStyle = C('#F0D060'); c.fill();
+      c.fillStyle = C('#E8EEF0'); c.fillRect(-13, -6.6, 8.2, 1.2);
+      c.restore();
+    },
+    body(c, C) {
+      const K = 'rgba(20,17,15,.7)';
+      // navy shorts (the leg stubs below read as white socks)
+      rr(c, -6, -7.4, 12, 5.2, 1.6); c.fillStyle = C('#2B3A67'); c.fill(); c.strokeStyle = K; c.lineWidth = 1; c.stroke();
+      c.strokeStyle = C('#1C2648'); c.lineWidth = .7; c.beginPath(); c.moveTo(.3, -6.2); c.lineTo(.3, -2.4); c.stroke();
+      // white shirt over the waistband
+      c.beginPath(); c.moveTo(-6, -10); c.quadraticCurveTo(-6, -13, -3, -13); c.lineTo(3, -13); c.quadraticCurveTo(6, -13, 6, -10); c.lineTo(6, -7); c.lineTo(-6, -7); c.closePath();
+      c.fillStyle = C('#F6F5EF'); c.fill(); c.strokeStyle = K; c.lineWidth = 1; c.stroke();
+      // navy collar trim
+      c.beginPath(); c.moveTo(-2.6, -13.2); c.lineTo(.4, -10.8); c.lineTo(3.2, -13.2); c.strokeStyle = C('#2B3A67'); c.lineWidth = 1.1; c.lineJoin = 'round'; c.stroke();
+      // shoulder straps
+      c.fillStyle = C('#B0302B');
+      c.fillRect(-5.2, -13.2, 1.7, 7); c.fillRect(3.4, -13.2, 1.7, 7);
+      c.strokeStyle = K; c.lineWidth = .6; c.strokeRect(-5.2, -13.2, 1.7, 7); c.strokeRect(3.4, -13.2, 1.7, 7);
+    },
+    face(c, C, o) {
+      // a small open "o" of excitement while falling; otherwise a little smile
+      if (o.dead) return;
+      c.beginPath();
+      if (o.state === 'fall') c.ellipse(2, -14.9, .9, 1.1, 0, 0, TAU);
+      else { c.moveTo(.6, -15.4); c.quadraticCurveTo(2, -13.6, 3.6, -15.4); c.closePath(); }
+      c.fillStyle = C('#7A2424'); c.fill();
+    },
+    hat(c, C, L, o) {
+      const K = '#14110F', Y = C('#FFD21F');
+      c.lineJoin = 'round'; c.lineCap = 'round';
+      // squat, puffy cloth crown (wider than the head, low on top) so it reads as a soft sun hat, not a hard hat
+      c.beginPath(); c.moveTo(-7.4, -.4); c.bezierCurveTo(-8.8, -4.6, -5.6, -7.6, 0, -7.4); c.bezierCurveTo(5.6, -7.6, 8.8, -4.6, 7.4, -.4); c.closePath();
+      c.fillStyle = Y; c.fill(); c.strokeStyle = K; c.lineWidth = 1.2; c.lineJoin = 'round'; c.stroke();
+      c.strokeStyle = C('#D9A40C'); c.lineWidth = .7; c.beginPath(); c.moveTo(-3.4, -6.8); c.quadraticCurveTo(-4.2, -3.6, -3.6, -.8); c.moveTo(3.4, -6.8); c.quadraticCurveTo(4.2, -3.6, 3.6, -.8); c.stroke();
+      c.strokeStyle = C('rgba(255,255,255,.65)'); c.lineWidth = 1; c.lineCap = 'round'; c.beginPath(); c.moveTo(-5.8, -3.2); c.quadraticCurveTo(-5, -5.8, -2, -6.4); c.stroke();
+      // wide floppy brim drooping all the way round, with a wavy hem
+      c.beginPath(); c.moveTo(-7.4, -1.2); c.lineTo(7.4, -1.2); c.quadraticCurveTo(11.4, -.6, 13, 4.2); c.quadraticCurveTo(11.6, 5, 10.2, 3.8);
+      c.quadraticCurveTo(8.8, 4.2, 7.4, 2.4); c.quadraticCurveTo(0, -4, -7.4, 2.4); c.quadraticCurveTo(-8.8, 4.2, -10.2, 3.8); c.quadraticCurveTo(-11.6, 5, -13, 4.2);
+      c.quadraticCurveTo(-11.4, -.6, -7.4, -1.2); c.closePath();
+      c.fillStyle = Y; c.fill(); c.strokeStyle = K; c.lineWidth = 1.1; c.stroke();
+      // stitching round the brim
+      c.strokeStyle = C('#D9A40C'); c.lineWidth = .6; c.beginPath(); c.moveTo(-10.8, 2.4); c.quadraticCurveTo(-8, -.4, 0, -1); c.quadraticCurveTo(8, -.4, 10.8, 2.4); c.stroke();
+      // on the hero only: chin elastic + the clip-on flashlight on the front shoulder strap (hat-local y +10 = chest)
+      if (o.skin) {
+        c.strokeStyle = 'rgba(20,17,15,.55)'; c.lineWidth = .6; c.beginPath(); c.moveTo(-4.6, 2.8); c.quadraticCurveTo(-1, 8.4, 4.8, 3.6); c.stroke();
+        rr(c, 2.6, 6.2, 3.6, 2.4, .8); c.fillStyle = C('#3E7FD8'); c.fill(); c.strokeStyle = K; c.lineWidth = .8; c.stroke();
+        c.beginPath(); c.arc(5.6, 7.4, 1.5, 0, TAU); c.fillStyle = L; c.fill(); c.strokeStyle = K; c.lineWidth = .8; c.stroke();
+      }
+    },
+  },
+
+  // ---------- B35 外送員: orange cube thermal box (保溫箱) on the back, navy riding jacket, orange 3/4 helmet with the
+  // visor flipped up and a clip-on rear light (the lamp), phone in hand, milk tea in a bag ----------
+  {
+    id: 'courier', name: '外送員', unlock: 35, blurb: '您的餐點正在下樓中',
+    overalls: '#2E4F8C', helmet: '#F2F3F0', lamp: '#FFF2C0', scarf: '#F28A1E', boots: '#2E3138',
+    glow: { r: 10, col: '#FFF2C0', a: .5 }, lampAt: [-3.6, -8.2], viewW: 21,
+    back(c, C, o) {
+      const st = o.state, t = o.t || 0, K = '#14110F';
+      const lean = st === 'run' ? .14 : st === 'teeter' ? (o.drop || 1) * (.1 + .07 * Math.sin(t * TAU * 2 / 60)) : 0;
+      const bob = st === 'run' ? -Math.abs(Math.sin(t * TAU * 9 / 60)) * 1.2 : st === 'fall' ? -1.6 : 0;
+      c.save(); c.rotate(lean); c.translate(0, bob); c.lineJoin = 'round';
+      // top face (3/4 view)
+      c.beginPath(); c.moveTo(-19.4, -24); c.lineTo(-16.6, -27); c.lineTo(-3.6, -27); c.lineTo(-6.4, -24); c.closePath();
+      c.fillStyle = C('#FFB25A'); c.fill(); c.strokeStyle = K; c.lineWidth = 1.1; c.stroke();
+      // side face
+      c.beginPath(); c.moveTo(-6.4, -24); c.lineTo(-3.6, -27); c.lineTo(-3.6, -9.8); c.lineTo(-6.4, -6.6); c.closePath();
+      c.fillStyle = C('#C9661A'); c.fill(); c.stroke();
+      // front face
+      rr(c, -19.4, -24, 13, 17.4, 1); c.fillStyle = C('#F28A1E'); c.fill(); c.strokeStyle = K; c.lineWidth = 1.1; c.stroke();
+      // lid seam, grey reflective band, handle
+      c.strokeStyle = C('#B85A16'); c.lineWidth = .8; c.beginPath(); c.moveTo(-19, -20.6); c.lineTo(-6.8, -20.6); c.stroke();
+      c.fillStyle = C('#C9CED6'); c.fillRect(-19, -14.6, 12.2, 2.2);
+      c.fillStyle = C('#8B6A4A'); c.fillRect(-14.6, -22.6, 3.6, 1);
+      c.restore();
+    },
+    body(c, C, o) {
+      const K = 'rgba(20,17,15,.7)', st = o.state, t = o.t || 0, s9 = Math.sin(t * TAU * 9 / 60);
+      // milk tea in a little plastic bag, in the back hand (drawn under the hand)
+      const aL = st === 'fall' ? 2.6 : st === 'run' ? .5 + s9 * .7 : st === 'teeter' ? 1.6 + Math.sin(t * TAU * 4 / 60) * 1.2 : .5;
+      const bx = -6 - Math.sin(aL) * 6, by = -12 + Math.cos(aL) * 6;
+      c.save(); c.translate(bx, by); c.rotate(st === 'run' ? -s9 * .3 : st === 'fall' ? Math.PI * .9 : Math.sin(t * .08) * .08);
+      c.lineJoin = 'round'; c.lineCap = 'round';
+      c.beginPath(); c.moveTo(-1.6, 1.4); c.lineTo(-.4, -.4); c.moveTo(1.6, 1.4); c.lineTo(.4, -.4); c.strokeStyle = C('#E8ECEE'); c.lineWidth = .8; c.stroke();
+      c.beginPath(); c.moveTo(-2.6, 1.2); c.lineTo(2.6, 1.2); c.lineTo(2.2, 7); c.lineTo(-2.2, 7); c.closePath();
+      c.fillStyle = C('rgba(240,244,246,.9)'); c.fill(); c.strokeStyle = '#14110F'; c.lineWidth = .8; c.stroke();
+      c.fillStyle = C('#B9864E'); c.fillRect(-1.6, 3, 3.2, 3.4);
+      c.fillStyle = C('#3A2418'); c.fillRect(-1.6, 5.4, 3.2, 1);
+      c.restore();
+      // jacket: zip, hi-vis band, collar; box straps over the shoulders
+      c.fillStyle = C('#C9CED6'); c.fillRect(-6, -8.6, 12, 1.6);
+      c.strokeStyle = C('#1D3360'); c.lineWidth = .7; c.beginPath(); c.moveTo(.6, -12.8); c.lineTo(.6, -3.4); c.stroke();
+      c.fillStyle = C('#1D3360'); c.beginPath(); c.moveTo(-3, -13.4); c.lineTo(3.6, -13.4); c.lineTo(.6, -11); c.closePath(); c.fill();
+      c.fillStyle = C('#3A3E46'); c.fillRect(-5.2, -13.2, 1.8, 9.4); c.fillRect(3.6, -13.2, 1.6, 5);
+      c.strokeStyle = K; c.lineWidth = .6; c.strokeRect(-5.2, -13.2, 1.8, 9.4);
+    },
+    face(c, C, o) {
+      const K = '#14110F', st = o.state, t = o.t || 0, s9 = Math.sin(t * TAU * 9 / 60);
+      // determined little grin (or "o" while falling)
+      if (!o.dead) {
+        c.beginPath();
+        if (st === 'fall') c.ellipse(2, -14.9, .9, 1.1, 0, 0, TAU);
+        else { c.moveTo(.4, -15.2); c.quadraticCurveTo(2.2, -13.8, 4, -15.6); }
+        if (st === 'fall') { c.fillStyle = C('#7A2424'); c.fill(); } else { c.strokeStyle = K; c.lineWidth = .8; c.lineCap = 'round'; c.stroke(); }
+      }
+      // phone in the front hand, screen glowing with the map
+      const aR = st === 'fall' ? -2.6 : st === 'run' ? -.5 - s9 * .7 : st === 'teeter' ? -1.6 - Math.cos(t * TAU * 4 / 60) * 1.2 : -.5;
+      const hx = 6 - Math.sin(aR) * 6, hy = -12 + Math.cos(aR) * 6;
+      let ang = -.35; if (st === 'run') ang = -.35 + s9 * .25; else if (st === 'fall') ang = -1.2; else if (st === 'teeter') ang = -.4 + Math.sin(t * TAU * 4 / 60) * .4;
+      c.save(); c.translate(hx, hy); c.rotate(ang); c.lineJoin = 'round';
+      rr(c, -1.4, -5.6, 3.6, 6.2, .8); c.fillStyle = C('#23262C'); c.fill(); c.strokeStyle = K; c.lineWidth = .9; c.stroke();
+      c.fillStyle = C('#8FE0F2'); c.fillRect(-.7, -4.8, 2.2, 4.4);
+      c.fillStyle = C('#F25A4A'); c.beginPath(); c.arc(.6, -3, .7, 0, TAU); c.fill();
+      c.restore();
+    },
+    hat(c, C, L, o) {
+      const K = '#14110F', H = C('#F2F3F0');
+      c.lineJoin = 'round'; c.lineCap = 'round';
+      // round shell with cheek guards, open face
+      c.beginPath(); c.moveTo(7.6, -1.2);
+      c.bezierCurveTo(8.6, -7.6, 4, -10.6, -.6, -10.6); c.bezierCurveTo(-6.6, -10.6, -9.8, -6, -9.2, .6);
+      c.lineTo(-8.4, 6); c.quadraticCurveTo(-6.4, 7.2, -4.4, 5.6); c.quadraticCurveTo(-3.8, 1.6, -1.4, -.6); c.quadraticCurveTo(3, -1.6, 7.6, -1.2); c.closePath();
+      c.fillStyle = H; c.fill(); c.strokeStyle = K; c.lineWidth = 1.2; c.stroke();
+      // orange racing stripe + navy trim on the cheek guard
+      c.strokeStyle = C('#F28A1E'); c.lineWidth = 1.8; c.beginPath();
+      c.moveTo(-8.6, -2.4); c.bezierCurveTo(-7.6, -7.8, -2.6, -10.2, 2.4, -9.6); c.stroke();
+      c.strokeStyle = C('#2E4F8C'); c.lineWidth = .9; c.beginPath(); c.moveTo(-8.6, 2.4); c.quadraticCurveTo(-6.4, 1.4, -4.6, 3.4); c.stroke();
+      // clear visor flipped up on top of the shell
+      c.beginPath(); c.moveTo(1.6, -9.6); c.quadraticCurveTo(7.4, -10.4, 10.2, -6.8); c.quadraticCurveTo(9.4, -5.4, 7.6, -5.8); c.quadraticCurveTo(5.6, -8, 1.6, -8.2); c.closePath();
+      c.fillStyle = C('rgba(170,215,235,.75)'); c.fill(); c.strokeStyle = K; c.lineWidth = .9; c.stroke();
+      // chin strap (on the hero only)
+      if (o.skin) { c.strokeStyle = C('#2E3138'); c.lineWidth = .9; c.beginPath(); c.moveTo(-5.2, 6); c.quadraticCurveTo(-3, 8.8, 1.2, 8.2); c.stroke(); }
+      // clip-on safety light on the back of the shell
+      rr(c, -6, -9.6, 4.6, 2.8, 1); c.fillStyle = C('#3A3E46'); c.fill(); c.strokeStyle = K; c.lineWidth = .8; c.stroke();
+      c.beginPath(); c.arc(-3.6, -8.2, 1.3, 0, TAU); c.fillStyle = L; c.fill();
+    },
+  },
+
+  // ---------- B60 雞排攤老闆: white head towel (毛巾) knotted at the back, his own stall bulb on a wire, denim apron
+  // over a white tee, tongs gripping a giant golden 雞排 bigger than his face, paper bag in the other hand ----------
+  {
+    id: 'chicken', name: '雞排攤老闆', unlock: 60, blurb: '雞排要切嗎？要辣嗎？',
+    overalls: '#F4F1EA', helmet: '#F4F1EA', lamp: '#FFE08A', scarf: '#E8E2D0', boots: '#3A3530', tone: '#E8B98E',
+    glow: { r: 11, col: '#FFD98A', a: .55 }, lampAt: [3.4, -12.5], viewTop: -36, reach: -40, viewW: 26,
+    body(c, C, o) {
+      const K = 'rgba(20,17,15,.7)', st = o.state, t = o.t || 0, s9 = Math.sin(t * TAU * 9 / 60);
+      // greasy paper bag (雞排紙袋) in the back hand
+      const aL = st === 'fall' ? 2.6 : st === 'run' ? .5 + s9 * .7 : st === 'teeter' ? 1.6 + Math.sin(t * TAU * 4 / 60) * 1.2 : .5;
+      const bx = -6 - Math.sin(aL) * 6, by = -12 + Math.cos(aL) * 6;
+      c.save(); c.translate(bx, by); c.rotate(st === 'run' ? -s9 * .25 : st === 'fall' ? Math.PI * .85 : Math.sin(t * .08) * .06);
+      c.lineJoin = 'round';
+      c.beginPath(); c.moveTo(-2.4, -.6); c.lineTo(2.4, -.6); c.lineTo(2.2, 6.4); c.lineTo(-2.2, 6.4); c.closePath();
+      c.fillStyle = C('#F3EAD6'); c.fill(); c.strokeStyle = '#14110F'; c.lineWidth = .8; c.stroke();
+      c.fillStyle = C('rgba(214,160,70,.75)'); c.beginPath(); c.arc(-.6, 3.2, 1.1, 0, TAU); c.arc(1, 5, .7, 0, TAU); c.fill();
+      c.strokeStyle = C('#C9B48E'); c.lineWidth = .6; c.beginPath(); c.moveTo(-2.3, .6); c.lineTo(2.3, .6); c.stroke();
+      c.restore();
+      // denim apron
+      c.beginPath(); c.moveTo(-3.2, -12.8); c.lineTo(3.2, -12.8); c.lineTo(3.6, -9.2); c.lineTo(6, -9); c.lineTo(6.4, -1.6);
+      c.quadraticCurveTo(0, -.6, -6.4, -1.6); c.lineTo(-6, -9); c.lineTo(-3.6, -9.2); c.closePath();
+      c.fillStyle = C('#3F6E9E'); c.fill(); c.strokeStyle = K; c.lineWidth = 1; c.lineJoin = 'round'; c.stroke();
+      c.strokeStyle = C('#2C5078'); c.lineWidth = .9; c.beginPath(); c.moveTo(-3, -12.8); c.lineTo(-1.6, -14.4); c.moveTo(3, -12.8); c.lineTo(1.6, -14.4); c.stroke();
+      // pocket + oil spot
+      rr(c, -2.4, -6.8, 4.8, 2.8, .6); c.strokeStyle = C('#8FB0D0'); c.lineWidth = .6; c.stroke();
+      c.fillStyle = C('rgba(30,50,80,.5)'); c.beginPath(); c.arc(3.6, -4, .9, 0, TAU); c.fill();
+    },
+    face(c, C, o) {
+      const K = '#14110F', st = o.state, t = o.t || 0, s9 = Math.sin(t * TAU * 9 / 60);
+      // buzz-cut black hair (stays when the towel flies off)
+      c.beginPath(); c.arc(0, -19, 7.1, Math.PI * 1.04, Math.PI * 1.9); c.quadraticCurveTo(1, -23.4, -6.9, -20.4); c.closePath();
+      c.fillStyle = C('#2A2420'); c.fill();
+      // thick brows + big grin
+      if (!o.dead) {
+        c.fillStyle = K; c.fillRect(-2.4, -21.8, 2.6, .9); c.fillRect(2.4, -21.8, 2.6, .9);
+        c.beginPath();
+        if (st === 'fall') c.ellipse(2.2, -14.9, 1, 1.2, 0, 0, TAU);
+        else { c.moveTo(-.4, -15.8); c.quadraticCurveTo(2.2, -12.2, 4.8, -15.8); c.closePath(); }
+        c.fillStyle = C('#7A2424'); c.fill();
+        if (st !== 'fall') { c.fillStyle = C('#FFFFFF'); c.fillRect(.4, -15.7, 3.6, .8); }
+      }
+      // tongs in the front hand gripping a giant golden 雞排
+      const aR = st === 'fall' ? -2.6 : st === 'run' ? -.5 - s9 * .7 : st === 'teeter' ? -1.6 - Math.cos(t * TAU * 4 / 60) * 1.2 : -.5;
+      const hx = 6 - Math.sin(aR) * 6, hy = -12 + Math.cos(aR) * 6;
+      let ang = -1.0 + Math.sin(t * .05) * .05, wob = 0;
+      if (st === 'run') { ang = -1 + s9 * .22; wob = Math.sin(t * TAU * 4.5 / 60) * .25; }
+      else if (st === 'fall') { ang = -1.35; wob = .3; }
+      else if (st === 'teeter') { ang = -.9 + Math.sin(t * TAU * 4 / 60) * .4; wob = Math.sin(t * TAU * 4 / 60) * .3; }
+      c.save(); c.translate(hx, hy); c.rotate(ang); c.lineCap = 'round'; c.lineJoin = 'round';
+      // tongs
+      c.beginPath(); c.moveTo(-.6, -.6); c.lineTo(5.6, -1.2); c.moveTo(-.6, .6); c.lineTo(5.6, 1.2);
+      c.strokeStyle = K; c.lineWidth = 1.9; c.stroke(); c.strokeStyle = C('#C3CAD1'); c.lineWidth = .9; c.stroke();
+      // the cutlet: a craggy flat slab ~18 x 14 (bigger than his whole head)
+      c.translate(12.8, 0); c.rotate(1.0 + wob);
+      c.beginPath(); c.moveTo(-9, -.6);
+      c.lineTo(-8.4, -3.6); c.lineTo(-7, -4.4); c.lineTo(-6.4, -6.4); c.lineTo(-3.6, -6.8); c.lineTo(-2, -7.8); c.lineTo(.4, -6.8);
+      c.lineTo(2.8, -7.6); c.lineTo(5.2, -6.4); c.lineTo(7.4, -6.2); c.lineTo(8, -3.8); c.lineTo(9.4, -2); c.lineTo(8.8, .8);
+      c.lineTo(9.2, 3.2); c.lineTo(7.2, 4.8); c.lineTo(6, 6.6); c.lineTo(3.2, 6.4); c.lineTo(1, 7.6); c.lineTo(-1.6, 6.4);
+      c.lineTo(-4.2, 7); c.lineTo(-6, 5.2); c.lineTo(-8.2, 4.4); c.lineTo(-8.2, 2); c.closePath();
+      c.fillStyle = C('#DD9630'); c.fill(); c.strokeStyle = K; c.lineWidth = 1.1; c.lineJoin = 'round'; c.stroke();
+      // golden crust inset, then crispy darker crags
+      c.beginPath(); c.moveTo(-7, -1); c.lineTo(-5.6, -4.4); c.lineTo(-1.8, -5.8); c.lineTo(3, -5.6); c.lineTo(6.6, -4.4); c.lineTo(7.4, -.4);
+      c.lineTo(6.6, 3.8); c.lineTo(3, 5); c.lineTo(-1.6, 4.8); c.lineTo(-5.6, 3.8); c.closePath();
+      c.fillStyle = C('#F0B648'); c.fill();
+      c.strokeStyle = C('#B86A1C'); c.lineWidth = .9; c.lineCap = 'round'; c.beginPath();
+      c.moveTo(-4.6, -2.4); c.lineTo(-3, -1.6); c.moveTo(-.6, -3.6); c.lineTo(1, -2.4); c.moveTo(3.6, -2.2); c.lineTo(5, -3);
+      c.moveTo(-3.4, 2); c.lineTo(-1.6, 2.8); c.moveTo(1.6, 1); c.lineTo(3.2, 2); c.moveTo(4.8, 2.4); c.lineTo(5.6, 1.2); c.stroke();
+      c.strokeStyle = C('#FFE39A'); c.lineWidth = 1; c.beginPath(); c.moveTo(-6, -1.6); c.quadraticCurveTo(-5, -4, -2.4, -4.6); c.stroke();
+      // the tongs' jaws pinch the near edge (drawn over the slab)
+      c.rotate(-1.0 - wob); c.translate(-12.8, 0);
+      c.beginPath(); c.moveTo(4.4, -1.2); c.lineTo(6.4, -1.4); c.moveTo(4.4, 1.2); c.lineTo(6.4, 1.4);
+      c.strokeStyle = K; c.lineWidth = 1.9; c.stroke(); c.strokeStyle = C('#C3CAD1'); c.lineWidth = .9; c.stroke();
+      c.restore();
+    },
+    hat(c, C, L, o) {
+      const K = '#14110F', t = o.t || 0, st = o.state;
+      const fl = st === 'run' ? Math.sin(t * TAU * 9 / 60) * 1.2 : st === 'fall' ? -2.4 : Math.sin(t * .06) * .4;
+      const sw = st === 'run' ? Math.sin(t * TAU * 9 / 60) * 1.2 : st === 'fall' ? 1.4 : Math.sin(t * .05) * .5;
+      c.lineJoin = 'round'; c.lineCap = 'round';
+      // his own stall bulb on a bent wire tucked into the knot ("自帶燈泡")
+      c.beginPath(); c.moveTo(-6.6, -2.6); c.quadraticCurveTo(-6.6, -12.6, -.4 + sw, -12.8);
+      c.strokeStyle = 'rgba(20,17,15,.7)'; c.lineWidth = 1.5; c.stroke(); c.strokeStyle = C('#8A8178'); c.lineWidth = .6; c.stroke();
+      rr(c, -.6 + sw, -14, 1.9, 2.6, .4); c.fillStyle = C('#A9AFB5'); c.fill(); c.strokeStyle = K; c.lineWidth = .7; c.stroke();
+      c.beginPath(); c.moveTo(1.3 + sw, -14.2); c.bezierCurveTo(6.4 + sw, -16.4, 6.4 + sw, -8.6, 1.3 + sw, -10.8); c.closePath();
+      c.fillStyle = L; c.fill(); c.strokeStyle = K; c.lineWidth = .9; c.stroke();
+      // knot + short tails hanging down the back
+      c.beginPath(); c.moveTo(-7.4, -1.2); c.quadraticCurveTo(-10.6, 0 + fl * .4, -11.2, 3.8 + fl * .4); c.lineTo(-9.2, 4.2 + fl * .3); c.quadraticCurveTo(-9, 1.6, -7.2, .6); c.closePath();
+      c.moveTo(-7.2, -.4); c.quadraticCurveTo(-8.6, 2.6, -8, 5.6 + fl * .2); c.lineTo(-6.4, 5.2); c.quadraticCurveTo(-6.6, 2.4, -5.8, .4); c.closePath();
+      c.fillStyle = C('#F7F5EE'); c.fill(); c.strokeStyle = K; c.lineWidth = .9; c.stroke();
+      c.beginPath(); c.arc(-7.2, -.8, 1.7, 0, TAU); c.fillStyle = C('#F7F5EE'); c.fill(); c.stroke();
+      // towel band round the forehead with a blue stripe
+      c.beginPath(); c.moveTo(-7.4, -.2); c.quadraticCurveTo(0, -4.6, 7.4, -1.6); c.lineTo(7.2, 1.2); c.quadraticCurveTo(0, -1.6, -7.2, 2.4); c.closePath();
+      c.fillStyle = C('#F7F5EE'); c.fill(); c.strokeStyle = K; c.lineWidth = 1.1; c.stroke();
+      c.strokeStyle = C('#4A7FC0'); c.lineWidth = .8; c.beginPath(); c.moveTo(-7, 1.2); c.quadraticCurveTo(0, -2.4, 7.2, .2); c.stroke();
+    },
+  },
+  // ---------- B125 珍奶: the kid is inside a giant cup of bubble milk tea. Clear-plastic cup (milk tea body, tapioca pearls
+  // settled at the bottom, plastic shine), the face peeks out of the top like a costume opening. The sealed-film lid sits on the
+  // head with a fat clear straw (a pearl caught inside); the straw tip glints = the lamp. ----------
+  {
+    id: 'boba', name: '珍奶', unlock: 125, blurb: '全糖去冰，往下衝！',
+    overalls: '#D29A62', helmet: '#FBF5EA', lamp: '#FFF4D0', scarf: '#E86A8E', boots: '#6B4128', lampAt: [6.2, -13.6],
+    glow: { r: 10, col: '#FFF0C8', a: .55 }, viewTop: -35, reach: -35,
+    back(c, C, o) {
+      const st = o.state, t = o.t || 0;
+      const lean = st === 'run' ? .14 : st === 'teeter' ? (o.drop || 1) * (.1 + .07 * Math.sin(t * TAU * 2 / 60)) : 0;
+      c.save(); c.rotate(lean); c.lineJoin = 'round';
+      // tapered cup: wide mouth around the head, narrower base just above the boots
+      c.beginPath(); c.moveTo(-10, -27.4); c.lineTo(10, -27.4); c.lineTo(7.8, -1.4); c.quadraticCurveTo(0, -.2, -7.8, -1.4); c.closePath();
+      c.fillStyle = C('#D29A62'); c.fill(); c.strokeStyle = '#14110F'; c.lineWidth = 1.3; c.stroke();
+      // pale upper band (milk foam / ice) so the cup reads as liquid with a level, not a sack
+      c.beginPath(); c.moveTo(-9.9, -26.4); c.lineTo(9.9, -26.4); c.lineTo(9.4, -21); c.lineTo(-9.4, -21); c.closePath();
+      c.fillStyle = C('#EBCDA4'); c.fill();
+      // clear-plastic lip (stays when the lid flies off)
+      c.beginPath(); c.moveTo(-10.6, -27.4); c.lineTo(10.6, -27.4); c.strokeStyle = '#14110F'; c.lineWidth = 2.6; c.lineCap = 'round'; c.stroke();
+      c.strokeStyle = C('#F4F7F8'); c.lineWidth = 1.2; c.stroke();
+      c.restore();
+    },
+    body(c, C) {
+      // lower cup front over the torso: milk tea + a pile of pearls + plastic shine
+      c.save(); c.beginPath(); c.rect(-12, -14.5, 24, 16); c.clip();
+      c.beginPath(); c.moveTo(-10, -27.4); c.lineTo(10, -27.4); c.lineTo(7.8, -1.4); c.quadraticCurveTo(0, -.2, -7.8, -1.4); c.closePath();
+      c.fillStyle = C('#D29A62'); c.fill();
+      // pearls (two staggered rows + a few strays), dark with a small shine
+      c.beginPath();
+      for (const [x, y] of [[-6, -2.8], [-3.4, -2.4], [-.8, -2.3], [1.8, -2.4], [4.4, -2.6], [6.4, -3.4], [-4.8, -4.9], [-2.2, -4.6], [.4, -4.8], [3, -4.6], [5.4, -5.4], [-6.6, -5.6], [-1, -7], [2.4, -7.6], [-4, -9.4]]) { c.moveTo(x + 1.25, y); c.arc(x, y, 1.25, 0, TAU); }
+      c.fillStyle = C('#3B2116'); c.fill();
+      c.fillStyle = C('rgba(255,236,210,.55)'); c.beginPath();
+      for (const [x, y] of [[-6, -2.8], [-.8, -2.3], [4.4, -2.6], [-2.2, -4.6], [3, -4.6], [-1, -7], [2.4, -7.6], [-4, -9.4]]) { c.moveTo(x - .1, y - .5); c.arc(x - .4, y - .5, .35, 0, TAU); }
+      c.fill();
+      c.restore();
+      // cup outline again over the front panel
+      c.beginPath(); c.moveTo(-9.1, -15.5); c.lineTo(-7.8, -1.4); c.quadraticCurveTo(0, -.2, 7.8, -1.4); c.lineTo(9.1, -15.5);
+      c.strokeStyle = '#14110F'; c.lineWidth = 1.3; c.lineJoin = 'round'; c.stroke();
+      // vertical plastic shine
+      c.strokeStyle = C('rgba(255,255,255,.7)'); c.lineWidth = 1.1; c.lineCap = 'round'; c.beginPath(); c.moveTo(-7.4, -14); c.lineTo(-6.6, -4); c.stroke();
+    },
+    face(c, C, o) {
+      const st = o.state, t = o.t || 0, s9 = Math.sin(t * TAU * 9 / 60);
+      const aL = st === 'fall' ? 2.6 : st === 'run' ? .5 + s9 * .7 : st === 'teeter' ? 1.6 + Math.sin(t * TAU * 4 / 60) * 1.2 : .5;
+      const aR = st === 'fall' ? -2.6 : st === 'run' ? -.5 - s9 * .7 : st === 'teeter' ? -1.6 - Math.cos(t * TAU * 4 / 60) * 1.2 : -.5;
+      c.lineCap = 'round';
+      for (const [sx, a] of [[-6, aL], [6, aR]]) {
+        const ex = sx - Math.sin(a) * 6, ey = -12 + Math.cos(a) * 6;
+        c.beginPath(); c.moveTo(sx, -12); c.lineTo(ex, ey); c.strokeStyle = 'rgba(20,17,15,.7)'; c.lineWidth = 3.2; c.stroke(); c.strokeStyle = C('#F2C9A0'); c.lineWidth = 2; c.stroke();
+      }
+      // costume opening: a cream ring framing the face
+      c.beginPath(); c.arc(0, -19, 7.7, 0, TAU); c.strokeStyle = C('#F6E6CC'); c.lineWidth = 1.3; c.stroke();
+      if (!o.dead && o.state !== 'fall') { c.beginPath(); c.moveTo(.8, -15.4); c.quadraticCurveTo(2.2, -14, 3.6, -15.4); c.strokeStyle = C('#7A3A2A'); c.lineWidth = .9; c.lineCap = 'round'; c.stroke(); }
+    },
+    hat(c, C, L, o) {
+      const K = '#14110F';
+      c.lineJoin = 'round'; c.lineCap = 'round';
+      // fat clear straw (behind the lid) with a pearl caught inside
+      c.beginPath(); c.moveTo(2.2, -6); c.lineTo(6.2, -13.6); c.strokeStyle = K; c.lineWidth = 4.6; c.stroke();
+      c.strokeStyle = C('#E6EEF0'); c.lineWidth = 2.8; c.stroke();
+      c.beginPath(); c.arc(4.2, -9.8, 1.05, 0, TAU); c.fillStyle = C('#3B2116'); c.fill();
+      c.beginPath(); c.moveTo(3.3, -7.4); c.lineTo(5.5, -11.6); c.strokeStyle = C('rgba(255,255,255,.9)'); c.lineWidth = .6; c.stroke();
+      // straw tip glint = lamp
+      c.beginPath(); c.arc(6.2, -13.6, 1.9, 0, TAU); c.fillStyle = L; c.fill(); c.strokeStyle = K; c.lineWidth = 1; c.stroke();
+      // sealed film lid: flat white rim with a pink-check printed film
+      rr(c, -10.8, -9.2, 21.6, 3.2, 1.5); c.fillStyle = C('#FBF5EA'); c.fill(); c.strokeStyle = K; c.lineWidth = 1.1; c.stroke();
+      c.fillStyle = C('#F27A9C'); c.beginPath();
+      for (let x = -8.4; x < 8.6; x += 2.4) c.rect(x, -8.4, 1.2, 1.6);
+      c.fill();
+    },
+  },
+
+  // ---------- B175 台灣黑熊: Formosan black bear onesie. Black hood with round ears and a tan muzzle, the cream V crescent on the
+  // chest, black sleeves and paws, stub tail. Every black shape gets a cool-grey rim so it never melts into dark strata. ----------
+  {
+    id: 'bear', name: '台灣黑熊', unlock: 175, blurb: '胸口有V，福氣滿滿！',
+    overalls: '#231F21', helmet: '#231F21', lamp: '#FFF2C4', scarf: '#E8D9B4', boots: '#2C2729', tone: '#F2C9A0', lampAt: [1.8, -5.8],
+    back(c, C, o) {
+      const st = o.state, t = o.t || 0, B = C('#231F21'), RIM = C('#857E91');
+      const lean = st === 'run' ? .14 : st === 'teeter' ? (o.drop || 1) * (.1 + .07 * Math.sin(t * TAU * 2 / 60)) : 0;
+      c.save(); c.rotate(lean);
+      // stub tail
+      c.beginPath(); c.arc(-6.4, -4.6, 2, 0, TAU); c.strokeStyle = RIM; c.lineWidth = 2.6; c.stroke(); c.fillStyle = B; c.fill();
+      // hood ring framing the face
+      if (!o.helmetOff) { c.beginPath(); c.arc(-.6, -19.2, 9, 0, TAU); c.strokeStyle = RIM; c.lineWidth = 2.6; c.stroke(); c.fillStyle = B; c.fill(); }
+      c.restore();
+    },
+    body(c, C) {
+      const B = C('#231F21');
+      rr(c, -6, -13, 12, 10, 3); c.strokeStyle = C('#857E91'); c.lineWidth = 2.4; c.stroke(); c.fillStyle = B; c.fill();
+      // the famous V-shaped crescent
+      c.beginPath(); c.moveTo(-6, -12.6); c.quadraticCurveTo(-2.6, -7.6, .2, -6); c.quadraticCurveTo(3, -7.6, 6.2, -12.6);
+      c.lineTo(3.4, -12.8); c.quadraticCurveTo(1.8, -10.2, .2, -9.4); c.quadraticCurveTo(-1.6, -10.2, -3.2, -12.8); c.closePath();
+      c.fillStyle = C('#F2E6C8'); c.fill();
+      // zip
+      c.strokeStyle = C('#4A4448'); c.lineWidth = .8; c.beginPath(); c.moveTo(.2, -5.8); c.lineTo(.2, -3.4); c.stroke();
+    },
+    face(c, C, o) {
+      const st = o.state, t = o.t || 0, s9 = Math.sin(t * TAU * 9 / 60);
+      const aL = st === 'fall' ? 2.6 : st === 'run' ? .5 + s9 * .7 : st === 'teeter' ? 1.6 + Math.sin(t * TAU * 4 / 60) * 1.2 : .5;
+      const aR = st === 'fall' ? -2.6 : st === 'run' ? -.5 - s9 * .7 : st === 'teeter' ? -1.6 - Math.cos(t * TAU * 4 / 60) * 1.2 : -.5;
+      c.lineCap = 'round';
+      for (const [sx, a] of [[-6, aL], [6, aR]]) {
+        const dx = -Math.sin(a), dy = Math.cos(a), ex = sx + dx * 5.4, ey = -12 + dy * 5.4;
+        c.beginPath(); c.moveTo(sx, -12); c.lineTo(ex, ey); c.strokeStyle = C('#857E91'); c.lineWidth = 4.4; c.stroke(); c.strokeStyle = C('#231F21'); c.lineWidth = 2.8; c.stroke();
+        c.beginPath(); c.arc(ex + dx * .6, ey + dy * .6, .9, 0, TAU); c.fillStyle = C('#6E5A4A'); c.fill();
+      }
+    },
+    hat(c, C, L) {
+      const K = '#14110F', B = C('#231F21'), RIM = C('#857E91'), TAN = C('#C9A27A');
+      c.lineJoin = 'round';
+      // ears + dome as one silhouette, rim first then fill (rim shows only outside)
+      c.beginPath(); c.arc(0, 0, 8.8, Math.PI, TAU); c.closePath();
+      c.moveTo(-3.4, -7.8); c.arc(-5.8, -7.8, 2.6, 0, TAU); c.moveTo(7.9, -7.8); c.arc(5.4, -7.8, 2.6, 0, TAU);
+      c.strokeStyle = RIM; c.lineWidth = 2.6; c.stroke(); c.fillStyle = B; c.fill();
+      c.beginPath(); c.arc(-5.8, -7.8, 1.2, 0, TAU); c.arc(5.4, -7.8, 1.2, 0, TAU); c.fillStyle = C('#5C4A40'); c.fill();
+      // tan muzzle on the hood front + black nose
+      c.beginPath(); c.ellipse(7.6, -2.6, 2.9, 2.1, -.15, 0, TAU); c.fillStyle = TAN; c.fill(); c.strokeStyle = K; c.lineWidth = .9; c.stroke();
+      c.beginPath(); c.ellipse(9.6, -3.2, 1.2, .9, 0, 0, TAU); c.fillStyle = '#14110F'; c.fill();
+      // lamp
+      c.beginPath(); c.arc(1.8, -5.8, 2.2, 0, TAU); c.fillStyle = L; c.fill(); c.strokeStyle = K; c.lineWidth = 1; c.stroke();
+    },
+  },
+
+  // ---------- B250 登山客: heading for 玉山. Huge orange trekking pack taller than the kid with a rolled blue sleeping mat on top and a
+  // mountain patch, khaki bucket hat with a real HEADLAMP (the lamp), green shell jacket with pack straps and hip belt,
+  // yellow neck gaiter, chunky hiking boots, trekking pole planted in the front hand. ----------
+  {
+    id: 'hiker', name: '登山客', unlock: 250, blurb: '玉山主峰，我來了！',
+    overalls: '#2F7D5B', helmet: '#C9B07A', lamp: '#FFF8DC', scarf: '#F2C744', boots: '#6B4A2E', lampAt: [7.2, -3.4],
+    glow: { r: 13, col: '#FFF8DC', a: .62 }, viewTop: -37, reach: -37,
+    back(c, C, o) {
+      const st = o.state, t = o.t || 0, K = '#14110F';
+      const lean = st === 'run' ? .14 : st === 'teeter' ? (o.drop || 1) * (.1 + .07 * Math.sin(t * TAU * 2 / 60)) : 0;
+      const bob = st === 'run' ? Math.abs(Math.sin(t * TAU * 9 / 60)) * -.8 : st === 'fall' ? -1.2 : 0;
+      c.save(); c.rotate(lean); c.translate(0, bob); c.lineJoin = 'round'; c.lineCap = 'round';
+      // main bag
+      rr(c, -15, -31, 11.4, 27.4, 3.4); c.fillStyle = C('#E0632E'); c.fill(); c.strokeStyle = K; c.lineWidth = 1.2; c.stroke();
+      // lid pocket
+      rr(c, -15.6, -32, 12.2, 5.4, 2.2); c.fillStyle = C('#B9461F'); c.fill(); c.strokeStyle = K; c.lineWidth = 1.1; c.stroke();
+      // front pocket + compression straps
+      rr(c, -14.2, -15.6, 6, 8.4, 2); c.fillStyle = C('#C8522A'); c.fill(); c.strokeStyle = 'rgba(20,17,15,.7)'; c.lineWidth = .9; c.stroke();
+      c.strokeStyle = C('#2B2B30'); c.lineWidth = 1.1; c.beginPath(); c.moveTo(-15, -22); c.lineTo(-7.8, -22); c.moveTo(-15, -18.2); c.lineTo(-7.8, -18.2); c.stroke();
+      // 玉山 patch: cream disc with a green peak and snowy top
+      c.beginPath(); c.arc(-11.4, -24.6, 2.3, 0, TAU); c.fillStyle = C('#F6EEDC'); c.fill(); c.strokeStyle = K; c.lineWidth = .7; c.stroke();
+      c.beginPath(); c.moveTo(-13.2, -23.3); c.lineTo(-11.4, -26.4); c.lineTo(-9.6, -23.3); c.closePath(); c.fillStyle = C('#2F7D5B'); c.fill();
+      c.beginPath(); c.moveTo(-12.1, -25.2); c.lineTo(-11.4, -26.4); c.lineTo(-10.7, -25.2); c.closePath(); c.fillStyle = C('#FFFFFF'); c.fill();
+      // rolled sleeping mat strapped on top
+      rr(c, -16.8, -36.4, 14.6, 4.8, 2.4); c.fillStyle = C('#3FA7C9'); c.fill(); c.strokeStyle = K; c.lineWidth = 1.1; c.stroke();
+      c.beginPath(); c.ellipse(-4.6, -34, 1.5, 2.1, 0, 0, TAU); c.strokeStyle = C('#1E6F8C'); c.lineWidth = .8; c.stroke();
+      c.strokeStyle = C('#2B2B30'); c.lineWidth = 1.2; c.beginPath(); c.moveTo(-13, -36.4); c.lineTo(-13, -31.6); c.moveTo(-7.6, -36.4); c.lineTo(-7.6, -31.6); c.stroke();
+      c.restore();
+    },
+    body(c, C) {
+      const K = 'rgba(20,17,15,.7)';
+      rr(c, -6, -13, 12, 10, 3); c.fillStyle = C('#2F7D5B'); c.fill(); c.strokeStyle = K; c.lineWidth = 1; c.stroke();
+      // zip
+      c.strokeStyle = C('#1F5A40'); c.lineWidth = .8; c.beginPath(); c.moveTo(2.4, -13); c.lineTo(2.4, -5); c.stroke();
+      // shoulder strap + sternum strap
+      c.beginPath(); c.moveTo(-4.6, -13.4); c.quadraticCurveTo(-1.4, -12.4, -.8, -6.2); c.lineTo(-3, -6.2); c.quadraticCurveTo(-3.2, -11, -5.8, -11.6); c.closePath();
+      c.fillStyle = C('#2B2B30'); c.fill();
+      c.strokeStyle = C('#2B2B30'); c.lineWidth = .9; c.beginPath(); c.moveTo(-1.4, -9.6); c.lineTo(4.6, -9.6); c.stroke();
+      // hip belt + buckle
+      c.fillStyle = C('#2B2B30'); c.fillRect(-6, -5.6, 12, 2);
+      rr(c, 1.6, -6, 2.6, 2.8, .6); c.fillStyle = C('#F2C744'); c.fill(); c.strokeStyle = '#14110F'; c.lineWidth = .6; c.stroke();
+    },
+    face(c, C, o) {
+      const K = '#14110F', st = o.state, t = o.t || 0, s9 = Math.sin(t * TAU * 9 / 60), s4 = Math.sin(t * TAU * 4 / 60);
+      const aL = st === 'fall' ? 2.6 : st === 'run' ? .5 + s9 * .7 : st === 'teeter' ? 1.6 + s4 * 1.2 : .5;
+      const aR = st === 'fall' ? -2.6 : st === 'run' ? -.5 - s9 * .7 : st === 'teeter' ? -1.6 - Math.cos(t * TAU * 4 / 60) * 1.2 : -.5;
+      c.lineCap = 'round'; c.lineJoin = 'round';
+      // jacket sleeves
+      for (const [sx, a] of [[-6, aL], [6, aR]]) {
+        const dx = -Math.sin(a), dy = Math.cos(a);
+        c.beginPath(); c.moveTo(sx, -12); c.lineTo(sx + dx * 4.5, -12 + dy * 4.5); c.strokeStyle = 'rgba(20,17,15,.7)'; c.lineWidth = 3.4; c.stroke(); c.strokeStyle = C('#2F7D5B'); c.lineWidth = 2.3; c.stroke();
+      }
+      // trekking pole in the front hand
+      const hx = 6 - Math.sin(aR) * 6, hy = -12 + Math.cos(aR) * 6;
+      const p = st === 'fall' ? Math.PI - .5 : st === 'run' ? .35 + s9 * .35 : st === 'teeter' ? .7 + s4 * .4 : .2;
+      const dx = Math.sin(p), dy = Math.cos(p);
+      c.beginPath(); c.moveTo(hx - dx * 2.6, hy - dy * 2.6); c.lineTo(hx + dx * 10.6, hy + dy * 10.6);
+      c.strokeStyle = K; c.lineWidth = 2.4; c.stroke(); c.strokeStyle = C('#B8C2CA'); c.lineWidth = 1.1; c.stroke();
+      c.beginPath(); c.moveTo(hx - dx * 2.8, hy - dy * 2.8); c.lineTo(hx + dx * .4, hy + dy * .4); c.strokeStyle = K; c.lineWidth = 3; c.stroke(); c.strokeStyle = C('#3A3A40'); c.lineWidth = 1.8; c.stroke();
+      const bx = hx + dx * 8.6, by = hy + dy * 8.6;
+      c.beginPath(); c.moveTo(bx - dy * 1.6, by + dx * 1.6); c.lineTo(bx + dy * 1.6, by - dx * 1.6); c.strokeStyle = K; c.lineWidth = 1.2; c.stroke();
+      // fist over the grip
+      c.beginPath(); c.arc(hx, hy, 1.3, 0, TAU); c.fillStyle = C('#F2C9A0'); c.fill(); c.strokeStyle = 'rgba(20,17,15,.7)'; c.lineWidth = .7; c.stroke();
+      // sun-burnt cheeks + determined grin
+      if (!o.dead) {
+        c.fillStyle = C('rgba(226,90,60,.55)'); c.beginPath(); c.arc(-4, -16.4, 1.3, 0, TAU); c.arc(5.2, -16.4, 1.3, 0, TAU); c.fill();
+        if (st !== 'fall') { c.beginPath(); c.moveTo(.8, -15.4); c.quadraticCurveTo(2.4, -13.6, 4, -15.4); c.closePath(); c.fillStyle = C('#7A2E22'); c.fill(); }
+      }
+    },
+    hat(c, C, L) {
+      const K = '#14110F';
+      c.lineJoin = 'round'; c.lineCap = 'round';
+      // bucket hat: crown + wide floppy brim
+      c.beginPath(); c.moveTo(-7, -.6); c.bezierCurveTo(-7.6, -7.4, -4, -8.8, .2, -8.8); c.bezierCurveTo(4.4, -8.8, 7.8, -7.4, 7.2, -.6); c.closePath();
+      c.fillStyle = C('#C9B07A'); c.fill(); c.strokeStyle = K; c.lineWidth = 1.2; c.stroke();
+      c.beginPath(); c.moveTo(-11, 2.4); c.quadraticCurveTo(-9.6, -1.6, -6.4, -1.4); c.lineTo(6.8, -1.4); c.quadraticCurveTo(10.2, -1.6, 11.6, 2.4); c.quadraticCurveTo(0, .4, -11, 2.4); c.closePath();
+      c.fillStyle = C('#B39A62'); c.fill(); c.strokeStyle = K; c.lineWidth = 1.1; c.stroke();
+      // stitch rings on the crown
+      c.strokeStyle = C('#9E8650'); c.lineWidth = .7; c.beginPath(); c.moveTo(-6.2, -6); c.quadraticCurveTo(0, -7.4, 6.4, -6); c.stroke();
+      // headlamp elastic band + housing + lens (= lamp)
+      c.beginPath(); c.moveTo(-7.2, -2.8); c.quadraticCurveTo(0, -4.2, 7, -3.2); c.strokeStyle = K; c.lineWidth = 2.6; c.stroke(); c.strokeStyle = C('#E2453C'); c.lineWidth = 1.4; c.stroke();
+      rr(c, 4.6, -5.6, 4.4, 4.4, 1.2); c.fillStyle = C('#3D4248'); c.fill(); c.strokeStyle = K; c.lineWidth = 1; c.stroke();
+      c.beginPath(); c.arc(7.2, -3.4, 1.7, 0, TAU); c.fillStyle = L; c.fill(); c.strokeStyle = K; c.lineWidth = .8; c.stroke();
+    },
+  },
+  // ---------- B350 廟口阿伯: the chess uncle under the banyan tree. Bald crown whose shine is the lamp (電火球), grey horseshoe
+  // hair + ear, toothpick, white short-sleeve 汗衫 rolled up over a round belly (北京比基尼), loose khaki shorts, towel on the
+  // shoulder, palm-leaf fan (蒲扇) fanning in the back hand, a red-ringed chess disc (no characters) in the front hand.
+  // On death the chess piece is what flies off (the "hat" drawn without o.skin). ----------
+  {
+    id: 'chess', name: '廟口阿伯', unlock: 350, blurb: '少年仔，來殺一盤！',
+    overalls: '#8C7B5C', helmet: '#E9BC8E', lamp: '#FFF8DC', scarf: '#8FC9DE', boots: '#6A4B34', tone: '#E9BC8E',
+    glow: { r: 9, col: '#FFF6D0', a: .5 }, lampAt: [1.2, -4.6],
+    body(c, C, o) {
+      const K = 'rgba(20,17,15,.7)', st = o.state, t = o.t || 0, s9 = Math.sin(t * TAU * 9 / 60);
+      // palm-leaf fan in the back hand, held upright and fanning (drawn first so the shirt and arm overlap it)
+      const aL = st === 'fall' ? 2.6 : st === 'run' ? .5 + s9 * .7 : st === 'teeter' ? 1.6 + Math.sin(t * TAU * 4 / 60) * 1.2 : .5;
+      const bx = -6 - Math.sin(aL) * 6, by = -12 + Math.cos(aL) * 6;
+      const fw = st === 'run' ? s9 * .35 : st === 'fall' ? .5 : st === 'teeter' ? Math.sin(t * TAU * 4 / 60) * .5 : Math.sin(t * TAU * 2 / 60) * .45;
+      c.save(); c.translate(bx, by); c.rotate((st === 'fall' ? .2 : -.25) + fw); c.lineJoin = 'round'; c.lineCap = 'round';
+      c.beginPath(); c.moveTo(0, 1); c.lineTo(0, -3.2); c.strokeStyle = '#14110F'; c.lineWidth = 2.2; c.stroke(); c.strokeStyle = C('#8A5A2E'); c.lineWidth = 1.1; c.stroke();
+      c.beginPath(); c.moveTo(0, -2.6); c.bezierCurveTo(-5.6, -3, -5.8, -11.2, 0, -11.4); c.bezierCurveTo(5.8, -11.2, 5.6, -3, 0, -2.6); c.closePath();
+      c.fillStyle = C('#E2C27C'); c.fill(); c.strokeStyle = '#14110F'; c.lineWidth = 1; c.stroke();
+      c.strokeStyle = C('#B58E48'); c.lineWidth = .7; c.beginPath();
+      c.moveTo(0, -3); c.lineTo(0, -10.6); c.moveTo(0, -3); c.lineTo(-3.4, -9.4); c.moveTo(0, -3); c.lineTo(3.4, -9.4); c.moveTo(0, -3); c.lineTo(-4.4, -6.4); c.moveTo(0, -3); c.lineTo(4.4, -6.4); c.stroke();
+      c.beginPath(); c.moveTo(0, -2.6); c.bezierCurveTo(-5.6, -3, -5.8, -11.2, 0, -11.4); c.bezierCurveTo(5.8, -11.2, 5.6, -3, 0, -2.6);
+      c.strokeStyle = C('#9C6A34'); c.lineWidth = 1.1; c.stroke();
+      c.restore();
+      // loose khaki shorts (wide legs over the boot tops)
+      c.beginPath(); c.moveTo(-6.4, -6); c.lineTo(6.8, -6); c.lineTo(7.2, -1.2); c.lineTo(.6, -1.2); c.lineTo(0, -2.6); c.lineTo(-.6, -1.2); c.lineTo(-7, -1.2); c.closePath();
+      c.fillStyle = C('#8C7B5C'); c.fill(); c.strokeStyle = K; c.lineWidth = 1; c.lineJoin = 'round'; c.stroke();
+      // white undershirt, hanging down at the back, hitched up over the belly at the front
+      c.beginPath(); c.moveTo(-6.4, -13.6); c.lineTo(5.6, -13.6); c.quadraticCurveTo(6.6, -12.4, 6.6, -10.8); c.lineTo(-.6, -10.6);
+      c.quadraticCurveTo(-2, -8, -1.2, -5.2); c.lineTo(-6.8, -5.2); c.closePath();
+      c.fillStyle = C('#F7F4EC'); c.fill(); c.strokeStyle = K; c.lineWidth = 1; c.stroke();
+      c.beginPath(); c.moveTo(1, -13.6); c.quadraticCurveTo(3, -11.8, 5, -13.6); c.fillStyle = C('#E9BC8E'); c.fill(); c.strokeStyle = K; c.lineWidth = .7; c.stroke();
+      // round belly poking out the front, with a belly button
+      c.beginPath(); c.ellipse(3, -7.4, 4.9, 3.7, 0, 0, TAU); c.fillStyle = C('#E9BC8E'); c.fill(); c.strokeStyle = '#14110F'; c.lineWidth = 1; c.stroke();
+      c.strokeStyle = C('#F8DCBC'); c.lineWidth = 1; c.lineCap = 'round'; c.beginPath(); c.moveTo(4.4, -9.8); c.quadraticCurveTo(6.8, -9.2, 7.2, -7.2); c.stroke();
+      c.fillStyle = C('#A8714A'); c.beginPath(); c.arc(4.4, -6.8, .6, 0, TAU); c.fill();
+      // the rolled-up hem sitting on top of the belly
+      c.beginPath(); c.moveTo(-1.6, -10.4); c.quadraticCurveTo(2.6, -12.4, 7, -10.6);
+      c.strokeStyle = '#14110F'; c.lineWidth = 3.2; c.stroke(); c.strokeStyle = C('#FFFFFF'); c.lineWidth = 1.9; c.stroke();
+      // towel over the back shoulder (light blue, white stripe)
+      c.beginPath(); c.moveTo(-6.8, -14.4); c.quadraticCurveTo(-3.6, -15.2, -2.2, -13.6); c.lineTo(-3, -8.4); c.lineTo(-5.4, -8.6); c.lineTo(-5.2, -12); c.lineTo(-7.6, -11); c.closePath();
+      c.fillStyle = C('#8FC9DE'); c.fill(); c.strokeStyle = '#14110F'; c.lineWidth = .9; c.stroke();
+      c.strokeStyle = C('#FFFFFF'); c.lineWidth = .8; c.beginPath(); c.moveTo(-4.9, -10.2); c.lineTo(-3, -10.1); c.stroke();
+    },
+    face(c, C, o) {
+      const K = '#14110F', st = o.state, t = o.t || 0, s9 = Math.sin(t * TAU * 9 / 60);
+      // grey horseshoe of hair round the back of the bald head, with an ear in front of it
+      c.lineCap = 'round';
+      c.beginPath(); c.arc(-.2, -19, 6.4, Math.PI * .7, Math.PI * 1.1);
+      c.strokeStyle = 'rgba(20,17,15,.8)'; c.lineWidth = 4.6; c.stroke(); c.strokeStyle = C('#D6D3CC'); c.lineWidth = 3.2; c.stroke();
+      c.beginPath(); c.arc(-1.4, -18.4, 1.7, 0, TAU); c.fillStyle = C('#E9BC8E'); c.fill(); c.strokeStyle = 'rgba(20,17,15,.7)'; c.lineWidth = .8; c.stroke();
+      // bushy grey brow over the front eye
+      c.strokeStyle = C('#BDB9B2'); c.lineWidth = 1.2; c.beginPath(); c.moveTo(2.2, -21.4); c.lineTo(5.4, -21.8); c.stroke();
+      // short white sleeves (an undershirt with sleeves, not a tank top)
+      const aL0 = st === 'fall' ? 2.6 : st === 'run' ? .5 + s9 * .7 : st === 'teeter' ? 1.6 + Math.sin(t * TAU * 4 / 60) * 1.2 : .5;
+      const aR0 = st === 'fall' ? -2.6 : st === 'run' ? -.5 - s9 * .7 : st === 'teeter' ? -1.6 - Math.cos(t * TAU * 4 / 60) * 1.2 : -.5;
+      for (const [sx, a] of [[-6, aL0], [6, aR0]]) {
+        const dx = -Math.sin(a), dy = Math.cos(a);
+        c.beginPath(); c.moveTo(sx, -12); c.lineTo(sx + dx * 2.4, -12 + dy * 2.4); c.strokeStyle = 'rgba(20,17,15,.7)'; c.lineWidth = 4; c.stroke(); c.strokeStyle = C('#F7F4EC'); c.lineWidth = 2.8; c.stroke();
+      }
+      // toothpick at the corner of the mouth
+      if (!o.dead) {
+        c.beginPath(); c.moveTo(3.6, -15.4); c.lineTo(8.2, -16.6); c.strokeStyle = 'rgba(20,17,15,.75)'; c.lineWidth = 1.6; c.stroke(); c.strokeStyle = C('#F2DDB0'); c.lineWidth = .7; c.stroke();
+      }
+      // the chess piece in the front hand (gone when it has flown off on death)
+      if (o.helmetOff) return;
+      const aR = st === 'fall' ? -2.6 : st === 'run' ? -.5 - s9 * .7 : st === 'teeter' ? -1.6 - Math.cos(t * TAU * 4 / 60) * 1.2 : -.5;
+      const hx = 6 - Math.sin(aR) * 6, hy = -12 + Math.cos(aR) * 6;
+      const px = hx + 1.2, py = hy - 1.4;
+      c.beginPath(); c.arc(px, py + .9, 3.3, 0, TAU); c.fillStyle = C('#B88A4E'); c.fill(); c.strokeStyle = K; c.lineWidth = 1; c.stroke();
+      c.beginPath(); c.arc(px, py, 3.3, 0, TAU); c.fillStyle = C('#F0DBAE'); c.fill(); c.strokeStyle = K; c.lineWidth = 1; c.stroke();
+      c.beginPath(); c.arc(px, py, 2.1, 0, TAU); c.strokeStyle = C('#D2342C'); c.lineWidth = 1; c.stroke();
+      // thumb over the edge
+      c.beginPath(); c.arc(hx, hy, 1.1, 0, TAU); c.fillStyle = C('#E9BC8E'); c.fill();
+    },
+    hat(c, C, L, o) {
+      const K = '#14110F';
+      if (!o.skin) {
+        // flying "hat" on death: his chess piece pops out of his hand
+        c.beginPath(); c.arc(0, -2.6, 5.4, 0, TAU); c.fillStyle = C('#B88A4E'); c.fill(); c.strokeStyle = K; c.lineWidth = 1.2; c.stroke();
+        c.beginPath(); c.arc(0, -4, 5.4, 0, TAU); c.fillStyle = C('#F0DBAE'); c.fill(); c.strokeStyle = K; c.lineWidth = 1.2; c.stroke();
+        c.beginPath(); c.arc(0, -4, 3.6, 0, TAU); c.strokeStyle = C('#D2342C'); c.lineWidth = 1.4; c.stroke();
+        c.beginPath(); c.ellipse(-2, -6.6, 1.4, .8, -.5, 0, TAU); c.fillStyle = L; c.fill();
+        return;
+      }
+      // the bald crown's shine is the lamp (head top is at y -6 here)
+      c.beginPath(); c.ellipse(1.2, -4.6, 2.5, 1.3, -.28, 0, TAU); c.fillStyle = L; c.fill();
+      c.strokeStyle = C('rgba(255,255,255,.8)'); c.lineWidth = .7; c.lineCap = 'round'; c.beginPath(); c.moveTo(-2.6, -5); c.quadraticCurveTo(-1.6, -5.9, -.4, -6); c.stroke();
+    },
+  },
+
+  // ---------- B450 墾丁浪人: Kenting surf kid. Sun-bleached messy hair, mirrored sunglasses pushed up on the head (the sun glint is
+  // the lamp; the shades are what fly off), teal hibiscus aloha shirt, orange board shorts, barefoot, white-and-coral shortboard
+  // strapped diagonally on the back (wobbles running, tips over falling). Sea-spray drop trail. ----------
+  {
+    id: 'surfer', name: '墾丁浪人', unlock: 450, blurb: '浪來了！衝一波～',
+    overalls: '#FF8A3D', helmet: '#FF6A4A', lamp: '#FFFBE0', scarf: '#18A79E', boots: '#D49A68', tone: '#D49A68',
+    glow: { r: 12, col: '#FFF0B0', a: .6 }, lampAt: [5.6, -5.4],
+    trail: { cols: ['#BFF3FF', '#FFFFFF', '#6FD6EE'], kind: 'spark', rate: 7, vy: -18, g: 60, life: .7, s: 1.5, y: [2, 18] },
+    back(c, C, o) {
+      const K = '#14110F', st = o.state, t = o.t || 0, s9 = Math.sin(t * TAU * 9 / 60);
+      const lean = st === 'run' ? .14 : st === 'teeter' ? (o.drop || 1) * (.1 + .07 * Math.sin(t * TAU * 2 / 60)) : 0;
+      // carried under the back arm: nose pointing back and slightly up; bobs when running, tips up when falling
+      let a = -1.32, lift = 0;
+      if (st === 'run') { a = -1.28 + s9 * .08; lift = Math.abs(s9) * -.8; }
+      else if (st === 'fall') { a = -.75 + Math.sin(t * TAU * 3 / 60) * .1; lift = -3; }
+      else if (st === 'teeter') a = -1.32 + Math.sin(t * TAU * 4 / 60) * .18;
+      c.save(); c.rotate(lean); c.translate(-7, -9.4 + lift); c.rotate(a); c.scale(1, .9); c.lineJoin = 'round';
+      // fin near the tail
+      c.beginPath(); c.moveTo(-2.6, 7.6); c.lineTo(-5.6, 10.6); c.lineTo(-2.8, 11.2); c.closePath(); c.fillStyle = C('#1F8F9A'); c.fill(); c.strokeStyle = K; c.lineWidth = .9; c.stroke();
+      // board
+      c.beginPath(); c.moveTo(0, -13.6); c.quadraticCurveTo(3.8, -6, 3.5, 4); c.quadraticCurveTo(3.1, 12.6, 0, 13.2); c.quadraticCurveTo(-3.1, 12.6, -3.5, 4); c.quadraticCurveTo(-3.8, -6, 0, -13.6); c.closePath();
+      c.fillStyle = C('#FFF7E6'); c.fill();
+      c.save(); c.clip();
+      c.fillStyle = C('#FF5E57'); c.fillRect(-4, -7.4, 8, 2.6); c.fillStyle = C('#FFC94A'); c.fillRect(-4, -4.8, 8, 1.2);
+      c.fillStyle = C('#2BB5B8'); c.fillRect(-4, 9, 8, 5);
+      c.strokeStyle = C('#E6C9A0'); c.lineWidth = .6; c.beginPath(); c.moveTo(0, -13); c.lineTo(0, 13); c.stroke();
+      c.restore();
+      c.beginPath(); c.moveTo(0, -13.6); c.quadraticCurveTo(3.8, -6, 3.5, 4); c.quadraticCurveTo(3.1, 12.6, 0, 13.2); c.quadraticCurveTo(-3.1, 12.6, -3.5, 4); c.quadraticCurveTo(-3.8, -6, 0, -13.6); c.closePath();
+      c.strokeStyle = K; c.lineWidth = 1.2; c.stroke();
+      c.strokeStyle = C('rgba(255,255,255,.9)'); c.lineWidth = .9; c.lineCap = 'round'; c.beginPath(); c.moveTo(-2, -8.6); c.quadraticCurveTo(-2.6, -3, -2.4, 1); c.stroke();
+      c.restore();
+    },
+    body(c, C, o) {
+      const K = 'rgba(20,17,15,.7)';
+      // board shorts: side stripe + drawstring
+      c.fillStyle = C('#FFFFFF'); c.fillRect(-6, -6.4, 1.3, 3.2);
+      // aloha shirt (open collar), hibiscus print
+      c.save(); rr(c, -6, -13, 12, 10, 3); c.clip();
+      c.beginPath(); c.moveTo(-6.5, -13.5); c.lineTo(6.5, -13.5); c.lineTo(6.5, -6.4); c.quadraticCurveTo(0, -5.4, -6.5, -6.4); c.closePath();
+      c.fillStyle = C('#18A79E'); c.fill(); c.strokeStyle = K; c.lineWidth = .9; c.stroke();
+      c.fillStyle = C('#FF6F91'); c.beginPath();
+      for (const [x, y] of [[-3.6, -11.2], [3.8, -8.6], [-1.2, -7.6]]) for (let i = 0; i < 5; i++) { const a = i * TAU / 5, fx = x + Math.cos(a) * 1, fy = y + Math.sin(a) * 1; c.moveTo(fx + .8, fy); c.arc(fx, fy, .8, 0, TAU); }
+      c.fill();
+      c.fillStyle = C('#FFE36A'); c.beginPath(); for (const [x, y] of [[-3.6, -11.2], [3.8, -8.6], [-1.2, -7.6]]) { c.moveTo(x + .55, y); c.arc(x, y, .55, 0, TAU); } c.fill();
+      c.fillStyle = C('#B9F0D8'); c.beginPath(); c.moveTo(4.6, -12.4); c.lineTo(6.4, -11.2); c.lineTo(4.4, -10.6); c.closePath(); c.moveTo(-5.6, -8.8); c.lineTo(-3.8, -7.4); c.lineTo(-5.8, -7); c.closePath(); c.fill();
+      c.restore();
+      rr(c, -6, -13, 12, 10, 3); c.strokeStyle = K; c.lineWidth = 1; c.stroke();
+      // open collar (V of skin) + white collar flaps
+      c.beginPath(); c.moveTo(-1.8, -13.2); c.lineTo(.6, -10); c.lineTo(2.6, -13.2); c.closePath(); c.fillStyle = C('#D49A68'); c.fill();
+      c.beginPath(); c.moveTo(-2.8, -13.4); c.lineTo(-.2, -10.6); c.lineTo(-1.2, -13.6); c.closePath(); c.moveTo(3.6, -13.4); c.lineTo(1.2, -10.6); c.lineTo(2, -13.6); c.closePath();
+      c.fillStyle = C('#F4FFFB'); c.fill(); c.strokeStyle = K; c.lineWidth = .6; c.stroke();
+      // board strap across the chest
+      c.strokeStyle = '#14110F'; c.lineWidth = 1.8; c.lineCap = 'round'; c.beginPath(); c.moveTo(-5.6, -12.4); c.lineTo(5.4, -6.4); c.stroke();
+      c.strokeStyle = C('#3B3F4A'); c.lineWidth = .9; c.stroke();
+    },
+    face(c, C, o) {
+      const K = '#14110F', st = o.state, t = o.t || 0, s9 = Math.sin(t * TAU * 9 / 60);
+      const fl = st === 'run' ? s9 * .5 : st === 'fall' ? -1.2 : 0;
+      // sun-bleached messy hair (stays when the shades fly off)
+      c.beginPath(); c.moveTo(-6.6, -15.4);
+      c.quadraticCurveTo(-9.6, -18, -8.6 + fl * .4, -21.6); c.lineTo(-10.4 + fl, -22.4);
+      c.quadraticCurveTo(-8.6, -25.6, -5.6, -26.2 + fl * .3); c.lineTo(-6.4 + fl * .5, -28.2 + fl * .4);
+      c.quadraticCurveTo(-1.6, -28.4, 1.4, -26.8); c.lineTo(2.4, -28.6 + fl * .4);
+      c.quadraticCurveTo(6.4, -26.8, 7.2, -22.8); c.lineTo(8.6, -22.4);
+      c.quadraticCurveTo(6.6, -21.6, 5, -22.4); c.lineTo(4.6, -20.8); c.quadraticCurveTo(2.6, -21.6, 1.6, -22.6);
+      c.quadraticCurveTo(-1.6, -22.4, -3.4, -19.6); c.quadraticCurveTo(-3.6, -17, -6.6, -15.4); c.closePath();
+      c.fillStyle = C('#B8742E'); c.fill(); c.strokeStyle = K; c.lineWidth = 1; c.lineJoin = 'round'; c.stroke();
+      c.strokeStyle = C('#F3C463'); c.lineWidth = 1.1; c.lineCap = 'round'; c.beginPath();
+      c.moveTo(-6.6, -24.4); c.quadraticCurveTo(-3, -26.6, 1, -26); c.moveTo(2.6, -25.4); c.quadraticCurveTo(5, -24.6, 6, -23); c.moveTo(-8, -21.4); c.lineTo(-6.6, -19); c.stroke();
+      // white zinc sunscreen stripe on the nose + a big grin
+      c.fillStyle = C('#FFFFFF'); rr(c, 5.2, -18.6, 1.6, 2.4, .7); c.fill();
+      if (!o.dead && st !== 'fall') { c.beginPath(); c.moveTo(1, -15.6); c.quadraticCurveTo(3, -12.6, 5.2, -15.6); c.closePath(); c.fillStyle = C('#FFFFFF'); c.fill(); c.strokeStyle = 'rgba(20,17,15,.8)'; c.lineWidth = .7; c.stroke(); }
+      // short teal aloha sleeves over the shoulders
+      const aL = st === 'fall' ? 2.6 : st === 'run' ? .5 + s9 * .7 : st === 'teeter' ? 1.6 + Math.sin(t * TAU * 4 / 60) * 1.2 : .5;
+      const aR = st === 'fall' ? -2.6 : st === 'run' ? -.5 - s9 * .7 : st === 'teeter' ? -1.6 - Math.cos(t * TAU * 4 / 60) * 1.2 : -.5;
+      c.lineCap = 'round';
+      for (const [sx, a] of [[-6, aL], [6, aR]]) {
+        const dx = -Math.sin(a), dy = Math.cos(a);
+        c.beginPath(); c.moveTo(sx, -12); c.lineTo(sx + dx * 2.6, -12 + dy * 2.6); c.strokeStyle = 'rgba(20,17,15,.7)'; c.lineWidth = 4; c.stroke(); c.strokeStyle = C('#18A79E'); c.lineWidth = 2.8; c.stroke();
+      }
+    },
+    hat(c, C, L, o) {
+      const K = '#14110F', fly = !o.skin;
+      c.lineJoin = 'round'; c.lineCap = 'round';
+      // sunglasses pushed up on the head: temple arm back over the hair, mirrored orange lens at the front
+      c.beginPath(); c.moveTo(fly ? -6 : -6.2, fly ? -4 : -5.4); c.lineTo(2, -6.2); c.strokeStyle = K; c.lineWidth = 1.6; c.stroke();
+      c.beginPath(); c.moveTo(1.6, -7.4); c.quadraticCurveTo(5.4, -8.6, 8.2, -7); c.quadraticCurveTo(8.6, -4, 6.4, -3.2); c.quadraticCurveTo(3, -3, 1.8, -5); c.closePath();
+      c.fillStyle = C('#23283C'); c.fill(); c.strokeStyle = K; c.lineWidth = 1.1; c.stroke();
+      c.beginPath(); c.moveTo(2.6, -6.6); c.quadraticCurveTo(5, -7.4, 7.4, -6.4); c.lineTo(7, -5.4); c.quadraticCurveTo(4.6, -6, 2.6, -5.6); c.closePath(); c.fillStyle = C('#FF7A4A'); c.fill();
+      // the sun glint = lamp (a four-point star on the lens)
+      const x = 5.6, y = -5.4, r = 1.5;
+      c.beginPath(); c.moveTo(x, y - r * 2); c.lineTo(x + r * .4, y - r * .4); c.lineTo(x + r * 2, y); c.lineTo(x + r * .4, y + r * .4); c.lineTo(x, y + r * 2); c.lineTo(x - r * .4, y + r * .4); c.lineTo(x - r * 2, y); c.lineTo(x - r * .4, y - r * .4); c.closePath();
+      c.fillStyle = L; c.fill();
+    },
+  },
+
+  // ---------- B600 台灣藍鵲 (legendary): Formosan blue magpie suit. Black hood + cap, red bill on the visor, glowing yellow eye
+  // (the lamp), deep-blue body with a light rim, black bib, blue wing sleeves with white tips, red feet, and the signature
+  // very long blue tail with black bands and white tips that droops at rest, streams flat when running and flies up when
+  // falling. Icy-blue halo + blue/white twinkle trail. ----------
+  {
+    id: 'magpie', name: '台灣藍鵲', unlock: 600, blurb: '長尾一甩，地心我來了！',
+    overalls: '#1F4FBF', helmet: '#16161E', lamp: '#FFE36A', scarf: '#2E64D8', boots: '#E0352B', tone: '#F2C9A0',
+    glow: { r: 15, col: '#CFE2FF', a: .62 }, lampAt: [2.8, -4.8],
+    trail: { cols: ['#9CC2FF', '#FFFFFF', '#4D82F0'], kind: 'twinkle', rate: 11, vy: -8, g: 0, life: .85, s: 1.7, y: [2, 16] },
+    back(c, C, o) {
+      const K = '#14110F', st = o.state, t = o.t || 0;
+      const lean = st === 'run' ? .14 : st === 'teeter' ? (o.drop || 1) * (.1 + .07 * Math.sin(t * TAU * 2 / 60)) : 0;
+      // tail pose: base angle (0 = straight back, + = up), length, wave amplitude/phase, sag
+      let A = .8, Ln = 18.5, amp = .5, ph = t * TAU * .6 / 60, bend = 2.2;
+      if (st === 'run') { A = .06; Ln = 22.5; amp = 1.5; ph = t * TAU * 2.6 / 60; bend = .8; }
+      else if (st === 'fall') { A = 1.32; Ln = 21; amp = 1.2; ph = t * TAU * 4 / 60; bend = -1.2; }
+      else if (st === 'teeter') { A = -.2 + Math.sin(t * TAU * 4 / 60) * .18; amp = 1; ph = t * TAU * 2 / 60; bend = 1.2; }
+      c.save(); c.rotate(lean); c.lineJoin = 'round';
+      const rx = -4.4, ry = -5.6, N = 10;
+      // feathers: [length factor, angle offset, width]; outer short ones first, the two long central ones on top
+      const FE = [[.56, -.2, 2.5], [.6, .24, 2.5], [.9, .1, 3], [1, -.02, 3.2]];
+      const xs = new Array(N + 1), ys = new Array(N + 1);
+      for (let f = 0; f < 4; f++) {
+        const L = Ln * FE[f][0], a = A + FE[f][1], W = FE[f][2];
+        const dx = -Math.cos(a), dy = -Math.sin(a), px = -dy, py = dx;
+        for (let i = 0; i <= N; i++) {
+          const s = i / N, off = bend * Math.sin(Math.PI * s) + Math.sin(ph - s * 4.5 + f) * amp * s;
+          xs[i] = rx + dx * L * s + px * off; ys[i] = ry + dy * L * s + py * off;
+        }
+        // three passes: whole feather (blue), black band, white tip
+        for (let pass = 0; pass < 3; pass++) {
+          const i0 = pass === 0 ? 0 : pass === 1 ? 7 : 8, i1 = pass === 1 ? 8 : N;
+          c.beginPath();
+          for (let i = i0; i <= i1; i++) { const w = W * (.5 + .5 * Math.min(1, i / N * 3)) / 2; if (i === i0) c.moveTo(xs[i] + px * w, ys[i] + py * w); else c.lineTo(xs[i] + px * w, ys[i] + py * w); }
+          if (i1 === N) { c.lineTo(xs[N] + dx * W * .5, ys[N] + dy * W * .5); }
+          for (let i = i1; i >= i0; i--) { const w = W * (.5 + .5 * Math.min(1, i / N * 3)) / 2; c.lineTo(xs[i] - px * w, ys[i] - py * w); }
+          c.closePath();
+          c.fillStyle = C(pass === 0 ? '#2B62D6' : pass === 1 ? '#1A1A24' : '#FFFFFF'); c.fill();
+          if (pass === 0) { c.strokeStyle = K; c.lineWidth = 1.1; c.stroke(); }
+        }
+        // light shaft along the feather (rim so the blue never sinks into dark strata)
+        c.beginPath(); c.moveTo(xs[1], ys[1]); for (let i = 2; i <= 7; i++) c.lineTo(xs[i], ys[i]);
+        c.strokeStyle = C('#9CC0FF'); c.lineWidth = .6; c.stroke();
+      }
+      // occasional twinkle on the longest tip
+      const tw = (t % 90) / 14;
+      if (tw < 1 && !o.dead) {
+        const r = Math.sin(Math.PI * tw) * 1.5, x = xs[N], y = ys[N];
+        c.beginPath(); c.moveTo(x, y - r * 2); c.lineTo(x + r * .4, y - r * .4); c.lineTo(x + r * 2, y); c.lineTo(x + r * .4, y + r * .4); c.lineTo(x, y + r * 2); c.lineTo(x - r * .4, y + r * .4); c.lineTo(x - r * 2, y); c.lineTo(x - r * .4, y - r * .4); c.closePath();
+        c.fillStyle = C('#FFFFFF'); c.fill();
+      }
+      // black hood ring framing the face, with a blue rim
+      if (!o.helmetOff) {
+        c.beginPath(); c.arc(-.6, -19.2, 8.7, 0, TAU); c.fillStyle = C('#1A1A24'); c.fill(); c.strokeStyle = K; c.lineWidth = 1.2; c.stroke();
+        c.beginPath(); c.arc(-.6, -19.2, 8, Math.PI * .45, Math.PI * 1.3); c.strokeStyle = C('#5F8CF0'); c.lineWidth = .9; c.stroke();
+      }
+      c.restore();
+    },
+    body(c, C) {
+      const K = 'rgba(20,17,15,.7)';
+      // deep-blue body with a lighter belly sheen and a light rim
+      c.beginPath(); c.ellipse(1.4, -7, 3.6, 3.2, 0, 0, TAU); c.fillStyle = C('#3D78EA'); c.fill();
+      rr(c, -5.3, -12.3, 10.6, 8.6, 2.5); c.strokeStyle = C('rgba(170,205,255,.55)'); c.lineWidth = .8; c.stroke();
+      // black bib (head + neck colour runs down the chest)
+      c.beginPath(); c.moveTo(-5.6, -13.3); c.lineTo(5.6, -13.3); c.quadraticCurveTo(5.4, -10.4, 2.6, -9.6); c.quadraticCurveTo(0, -9, -2.6, -9.8); c.quadraticCurveTo(-5.4, -10.6, -5.6, -13.3); c.closePath();
+      c.fillStyle = C('#1A1A24'); c.fill(); c.strokeStyle = K; c.lineWidth = .8; c.stroke();
+      c.strokeStyle = C('#5F8CF0'); c.lineWidth = .7; c.beginPath(); c.moveTo(-4.4, -11); c.quadraticCurveTo(0, -9.4, 4.4, -11); c.stroke();
+    },
+    face(c, C, o) {
+      const st = o.state, t = o.t || 0, s9 = Math.sin(t * TAU * 9 / 60);
+      // wing sleeves: blue with a white-tipped trailing edge
+      const aL = st === 'fall' ? 2.6 : st === 'run' ? .5 + s9 * .7 : st === 'teeter' ? 1.6 + Math.sin(t * TAU * 4 / 60) * 1.2 : .5;
+      const aR = st === 'fall' ? -2.6 : st === 'run' ? -.5 - s9 * .7 : st === 'teeter' ? -1.6 - Math.cos(t * TAU * 4 / 60) * 1.2 : -.5;
+      c.lineCap = 'round'; c.lineJoin = 'round';
+      for (const [sx, a, side] of [[-6, aL, -1], [6, aR, 1]]) {
+        const dx = -Math.sin(a), dy = Math.cos(a), ex = sx + dx * 4.8, ey = -12 + dy * 4.8;
+        // trailing feather flap (toward the back of the arm)
+        const nx = -dy * side * -1, ny = dx * side * -1;
+        c.beginPath(); c.moveTo(sx + nx * 1.2, -12 + ny * 1.2); c.lineTo(ex + nx * 1.4 + dx * .6, ey + ny * 1.4 + dy * .6); c.lineTo(ex + nx * 3.2 - dx * .4, ey + ny * 3.2 - dy * .4); c.lineTo(sx + nx * 2.2 + dx * 2, -12 + ny * 2.2 + dy * 2); c.closePath();
+        c.fillStyle = C('#FFFFFF'); c.fill(); c.strokeStyle = 'rgba(20,17,15,.75)'; c.lineWidth = .8; c.stroke();
+        c.beginPath(); c.moveTo(sx, -12); c.lineTo(ex, ey); c.strokeStyle = 'rgba(20,17,15,.75)'; c.lineWidth = 4.2; c.stroke(); c.strokeStyle = C('#2B62D6'); c.lineWidth = 3; c.stroke();
+        c.beginPath(); c.moveTo(sx + dx, -12 + dy); c.lineTo(ex - dx * .6, ey - dy * .6); c.strokeStyle = C('#8DB4FF'); c.lineWidth = .7; c.stroke();
+      }
+    },
+    hat(c, C, L, o) {
+      const K = '#14110F';
+      c.lineJoin = 'round'; c.lineCap = 'round';
+      // red bill on the visor
+      c.beginPath(); c.moveTo(5.8, -5.6); c.quadraticCurveTo(11.2, -5.2, 14.4, -1); c.quadraticCurveTo(14.2, .4, 12.8, .2); c.quadraticCurveTo(9.8, -.6, 6.6, .6); c.closePath();
+      c.fillStyle = C('#E8352B'); c.fill(); c.strokeStyle = K; c.lineWidth = 1.1; c.stroke();
+      c.strokeStyle = C('#FF8A7A'); c.lineWidth = .7; c.beginPath(); c.moveTo(7.2, -3.2); c.quadraticCurveTo(10.4, -3.2, 12.4, -1); c.stroke();
+      c.strokeStyle = 'rgba(20,17,15,.6)'; c.lineWidth = .6; c.beginPath(); c.moveTo(7.2, -1.2); c.quadraticCurveTo(10, -1.4, 12.6, -.2); c.stroke();
+      // black cap dome
+      c.beginPath(); c.moveTo(-8.8, .4); c.bezierCurveTo(-9.2, -6.6, -4.6, -9.6, .2, -9.6); c.bezierCurveTo(5.4, -9.6, 8.8, -6.2, 8.4, .2); c.quadraticCurveTo(0, -1.2, -8.8, .4); c.closePath();
+      c.fillStyle = C('#1A1A24'); c.fill(); c.strokeStyle = K; c.lineWidth = 1.2; c.stroke();
+      // nape feathers flicking out at the back of the head
+      c.beginPath(); c.moveTo(-7.6, -5.4); c.lineTo(-11.4, -4.4); c.lineTo(-8.4, -2.8); c.lineTo(-11, -1.2); c.lineTo(-8.4, .2); c.closePath();
+      c.fillStyle = C('#1A1A24'); c.fill(); c.strokeStyle = K; c.lineWidth = 1; c.stroke();
+      // blue sheen rim
+      c.beginPath(); c.moveTo(-7.4, -2.6); c.bezierCurveTo(-7.2, -6.6, -3.6, -8.4, .4, -8.4); c.strokeStyle = C('#5F8CF0'); c.lineWidth = 1.1; c.stroke();
+      // mascot-hood eyes on the dome: far eye peeking, near eye glowing yellow = lamp
+      c.beginPath(); c.arc(-1.4, -6.2, 2.1, 0, TAU); c.fillStyle = C('#F4F7FF'); c.fill(); c.strokeStyle = K; c.lineWidth = .9; c.stroke();
+      c.beginPath(); c.arc(-.8, -6.2, .9, 0, TAU); c.fillStyle = '#14110F'; c.fill();
+      c.beginPath(); c.arc(2.8, -4.8, 2.7, 0, TAU); c.fillStyle = C('#F4F7FF'); c.fill(); c.strokeStyle = K; c.lineWidth = .9; c.stroke();
+      c.beginPath(); c.arc(2.8, -4.8, 1.9, 0, TAU); c.fillStyle = L; c.fill();
+      c.beginPath(); c.arc(3.4, -4.8, .9, 0, TAU); c.fillStyle = '#14110F'; c.fill();
+    },
+  },
 ];
 SKINS.sort((a, b) => a.unlock - b.unlock);
 for (const k of SKINS) { k.overallsDark = scaleCol(k.overalls, .75); k.overallsLight = lighten(k.overalls, .3); }
@@ -3614,7 +4369,7 @@ const UI = {
     const k = Math.min(3, Math.max(2, Math.ceil(window.devicePixelRatio || 1)));
     cv.width = px * k; cv.height = px * k; const x = cv.getContext('2d'); x.setTransform(k * px / 48, 0, 0, k * px / 48, 0, 0);
     x.fillStyle = '#2B1D14'; x.fillRect(0, 0, 48, 48);
-    const fit = Math.min(1.3, 39 / -(sk.viewTop || -30)); x.save(); x.translate(24, 41); x.scale(fit, fit);
+    const fit = Math.min(1.3, 39 / -(sk.viewTop || -30), sk.viewW ? 23 / sk.viewW : 9); x.save(); x.translate(24, 41); x.scale(fit, fit);
     if (ok) { const save = Hero.scarf.map(p => ({ ...p })); Hero.scarf.forEach((p, i) => { p.x = -4 - i * 4; p.y = -14 + i * 2; }); drawHero(x, 0, 0, { facing: 1, state: 'idle', t: 0, skin: sk, camY: 0, glowR: sk.glow ? sk.glow.r : 10, glowCol: sk.glow ? sk.glow.col : '#FFF6C8', glowA: sk.glow ? sk.glow.a : .55 }); Hero.scarf.forEach((p, i) => Object.assign(p, save[i])); }
     else { x.globalAlpha = .9; x.fillStyle = '#14110F'; x.beginPath(); x.arc(0, -19, 8.5, 0, TAU); x.fill(); rr(x, -7, -14, 14, 13, 4); x.fill(); x.fillRect(-6, -2, 12, 2); }
     x.restore();
@@ -3676,7 +4431,7 @@ const UI = {
     if (cv.width !== 96 * k) { cv.width = 96 * k; cv.height = 96 * k; }
     const x = cv.getContext('2d'); x.setTransform(k, 0, 0, k, 0, 0); x.fillStyle = '#2B1D14'; x.fillRect(0, 0, 96, 96);
     x.fillStyle = 'rgba(244,233,216,.08)'; x.fillRect(14, 84, 68, 4);
-    const fit = ok ? Math.min(2.5, 80 / -(sk.viewTop || -30)) : 2.5; x.save(); x.translate(48, 84); x.scale(fit, fit);
+    const fit = ok ? Math.min(2.5, 80 / -(sk.viewTop || -30), sk.viewW ? 46 / sk.viewW : 9) : 2.5; x.save(); x.translate(48, 84); x.scale(fit, fit);
     if (ok) {
       const ph = rm ? 0 : (t % 4), st = ph < 2 ? 'idle' : 'run', tick = Math.floor(t * 60);
       const save = Hero.scarf.map(p => ({ ...p })); Hero.scarf.forEach((p, i) => { p.x = -4 - i * 4 + (st === 'run' ? Math.sin(t * 9 + i) * .8 : 0); p.y = -14 + i * 2 + (st === 'run' ? -i * .8 : 0); });
