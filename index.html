@@ -591,7 +591,9 @@ button{font-family:inherit;color:inherit}
   const overlap = (P, x) => x + FOOT >= P.L && x - FOOT <= P.R;
   function profileSpeed(s) {
     const camRow = s.camY / ROW;
-    return s.profile === 'onboard' ? Math.min(2.0, 0.8 + 0.008 * camRow) : Math.min(2.0, 1.0 + 0.007 * camRow);
+    // early curve unchanged up to 2.0 (about B143); past it the ceiling keeps creeping faster, to 3.0 by about B540
+    const base = s.profile === 'onboard' ? 0.8 + 0.008 * camRow : 1.0 + 0.007 * camRow;
+    return base <= 2.0 ? base : Math.min(3.0, 2.0 + (base - 2.0) * 0.36);
   }
   function emit(s, type, data) { s.events.push(Object.assign({ type, tick: s.tick }, data || {})); }
   function leaveGround(h) {
@@ -711,7 +713,7 @@ button{font-family:inherit;color:inherit}
     let v = 0;
     if (s.started) { const t = Math.min(1, (s.tick - s.startTick) / 60); const sm = t * t * (3 - 2 * t); v = profileSpeed(s) * sm; }
     s.scroll = v; s.camY += v;
-    const camRow = s.camY / ROW, lv = Math.min(7, 1 + Math.floor(camRow / 25));
+    const camRow = s.camY / ROW, lv = Math.min(20, 1 + Math.floor(camRow / 25));
     if (lv > s.lv) { s.lv = lv; emit(s, 'speedLv', { lv }); }
     // 5-8. heroes
     if (!s.dead) moveHero(s, s, dir);
