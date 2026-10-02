@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>台灣人下樓梯</title>
+<title>緊落來！台灣人下樓梯</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <style>
@@ -118,8 +118,9 @@ button{font-family:inherit;color:inherit}
 /* title */
 #cardTitle{width:min(360px,94vw)}
 #cardTitle .cardHead{padding-top:18px}
-.logo{margin:0;font:400 clamp(34px,10.5vw,44px)/1.05 var(--f-zh);white-space:nowrap;letter-spacing:.04em;color:var(--ink);text-shadow:0 3px 0 var(--lamp)}
-.logoSub{font:400 14px/1.2 var(--f-num);letter-spacing:.18em;color:var(--muted);margin-top:4px}
+.logo{margin:0;font:400 clamp(40px,13vw,56px)/1.05 var(--f-zh);white-space:nowrap;letter-spacing:.04em;color:var(--ink);text-shadow:0 3px 0 var(--lamp)}
+.logo .bang{margin:0 -.32em 0 -.22em}
+.logoSub{font:400 17px/1.2 var(--f-zh);letter-spacing:.3em;padding-left:.3em;color:var(--muted);margin-top:6px}
 .tagline{font-size:15px;line-height:1.5;color:#4A3A2C;margin:8px 0 0;text-wrap:balance}
 .bestPill{display:inline-block;margin:10px auto 0;padding:5px 14px;border-radius:999px;background:var(--ink);color:var(--lamp);font-size:15px}
 .minor{font-size:13px;color:var(--muted);margin-top:4px;min-height:1em}
@@ -248,9 +249,9 @@ button{font-family:inherit;color:inherit}
 .short .skinInfo{flex-direction:column;align-items:flex-start}
 .short .card,.short #cardTitle,.short #cardSkins{width:min(680px,96vw)}
 .short .twoCol{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;align-items:start}
-.tight .logo{font-size:34px}.tight #cardTitle .tagline,.tight .credit{display:none}.tight .depth .num{font-size:52px}.tight .cardHead{padding-top:10px}
+.tight .logo{font-size:40px}.tight #cardTitle .tagline,.tight .credit{display:none}.tight .depth .num{font-size:52px}.tight .cardHead{padding-top:10px}
 .short .depth .num{font-size:48px}
-.short .logo{font-size:36px}
+.short .logo{font-size:44px}
 #bootFail{position:absolute;inset:0;display:grid;place-items:center;color:var(--paper);font-size:18px;background:var(--ink)}
 .rm .card,.rm .card.open{transition:opacity .2s!important}
 .rm #moveHint .half,.rm #moveHint kbd,.rm #hud.low.beat .pip:not(.off){animation:none!important}
@@ -258,9 +259,9 @@ button{font-family:inherit;color:inherit}
 </style>
 </head>
 <body>
-<div id="root" tabindex="0" aria-label="台灣人下樓梯">
+<div id="root" tabindex="0" aria-label="緊落來！台灣人下樓梯">
   <div id="cave"></div>
-  <div id="frame"><canvas id="cv" role="img" aria-label="台灣人下樓梯 遊戲畫面"></canvas></div>
+  <div id="frame"><canvas id="cv" role="img" aria-label="緊落來！遊戲畫面"></canvas></div>
   <div id="hud" aria-live="off">
     <div class="hudRow" id="lifeRow"><div id="lifeBox" role="img" aria-label="生命 12／12"><span class="ptag t1" id="tag1" hidden>1P</span><div id="pips"></div><span id="lifeNum">12/12</span></div></div>
     <div class="hudRow" id="floorRow"><div id="floorBox"><span class="ptag t1" id="tag1f" hidden>1P</span><span class="lbl">地下</span><span id="floorNum"></span><span class="lbl">階</span></div></div>
@@ -276,8 +277,8 @@ button{font-family:inherit;color:inherit}
   <section class="card" id="cardTitle" aria-labelledby="titleLogo">
     <div class="card-scroll"><div class="twoCol">
       <div class="cardHead">
-        <h1 class="logo" id="titleLogo">台灣人下樓梯</h1>
-        <div class="logoSub">TAIWAN DOWNSTAIRS</div>
+        <h1 class="logo" id="titleLogo">緊落來<span class="bang">！</span></h1>
+        <div class="logoSub">台灣人下樓梯</div>
         <p class="tagline">天花板一路追下來，腳下的台階可不一定靠得住。</p>
         <div class="bestPill" id="tBest">還沒有紀錄，來創一個吧！</div>
         <div class="minor" id="tMinor"></div>
@@ -414,7 +415,7 @@ button{font-family:inherit;color:inherit}
 <div id="saProbe"></div>
 <script id="sim">
 'use strict';
-/* ===== 台灣人下樓梯 — simulation (no DOM access; also runs in Node for tests) ===== */
+/* ===== 緊落來！台灣人下樓梯 — simulation (no DOM access; also runs in Node for tests) ===== */
 (function (root) {
   const FW = 360, FH = 540, ROW = 64, ROW0 = 192, WALL = 12;
   const XMIN = 22, XMAX = 338, FOOT = 12, HEAD = 24, PH = 28;
@@ -887,7 +888,7 @@ button{font-family:inherit;color:inherit}
 </script>
 <script>
 
-/* ===== 台灣人下樓梯 — app (DOM, render, audio, flow) ===== */
+/* ===== 緊落來！台灣人下樓梯 — app (DOM, render, audio, flow) ===== */
 'use strict';
 const Sim = window.__sim, Bot = window.__bot;
 const FW = Sim.FW, FH = Sim.FH, ROW = Sim.ROW, STEP = 1000 / 60;
